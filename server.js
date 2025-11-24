@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import cookieParser from 'cookie-parser';
+import { songRoutes } from './api/song/song.routes.js';
 
 const app = express();
 
@@ -20,6 +21,12 @@ app.use(express.static('public'));
 app.use(cookieParser());
 app.set('query parser', 'extended');
 
+app.use((req, res, next) => {
+  console.log(`Path triggered: ${req.method} ${req.originalUrl}`);
+  next();
+});
+
+app.use('/api/song', songRoutes);
 
 app.get(/.*/, (req, res) => {
   res.sendFile(path.resolve('public/index.html'));

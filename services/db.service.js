@@ -1,6 +1,6 @@
 import { MongoClient } from 'mongodb';
 
-import { config } from '../config/index.js';
+import { config } from '../config/db/index.js';
 // console.log('config:', config)
 
 export const dbService = { getCollection };
