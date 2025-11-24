@@ -16,13 +16,13 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.json());
-app.use(express.static('dist'));
+app.use(express.static('public'));
 app.use(cookieParser());
 app.set('query parser', 'extended');
 
 
 app.get(/.*/, (req, res) => {
-  res.sendFile(path.resolve('dist/index.html'));
+  res.sendFile(path.resolve('public/index.html'));
 });
 
 const port = process.env.PORT || 3030;
