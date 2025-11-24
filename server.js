@@ -25,5 +25,5 @@ app.get(/.*/, (req, res) => {
   res.sendFile(path.resolve('dist/index.html'));
 });
 
-const port = process.env.PORT;
+const port = process.env.PORT || 3030;
 app.listen(port, () => console.log(`Server ready at http://localhost:${port}`));
