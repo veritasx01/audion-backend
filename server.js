@@ -4,7 +4,7 @@ import cors from 'cors';
 import path from 'path';
 import cookieParser from 'cookie-parser';
 import { songRoutes } from './api/song/song.routes.js';
-import { logger } from '../middleware/logger.middleware.js';
+import { logRequest } from './middleware/logger.middleware.js';
 import { loggerService } from './services/logger.service.js';
 
 const app = express();
@@ -19,7 +19,7 @@ app.use(express.json());
 app.use(express.static('public'));
 app.use(cookieParser());
 app.set('query parser', 'extended');
-app.use(logger); // use logger middleware for logging every incoming request
+app.use(logRequest); // log all incoming requests with custom logger middleware
 
 app.use('/api/song', songRoutes);
 
