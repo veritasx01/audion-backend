@@ -1,6 +1,6 @@
 import { songService } from './song.service.js';
 
-export async function getSongs(res, req) {
+export async function getSongs(req, res) {
   try {
     const songs = await songService.query();
     res.status(200).send(songs);
@@ -9,21 +9,22 @@ export async function getSongs(res, req) {
   }
 }
 
-export async function getSong(res, req) {
+export async function getSong(req, res) {
+  const { songId } = req.params;
   try {
-    const song = await songService.getById();
+    const song = await songService.getById(songId);
     res.status(200).send(song);
   } catch (err) {
     res.status(500).send({ error: err });
   }
 }
 
-export async function updateSong(res, req) {}
+export async function updateSong(req, res) {}
 
-export async function addSong(res, req) {}
+export async function addSong(req, res) {}
 
-export async function removeSong(res, req) {
-  const { songId } = res.params;
+export async function removeSong(req, res) {
+  const { songId } = req.params;
   try {
     const succeeded = await songService.remove(songId);
     if (succeeded) res.status(204).send();

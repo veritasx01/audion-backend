@@ -6,7 +6,7 @@ export const songService = { query, getById, remove, add, update };
 async function query(filterBy = {}) {
   try {
     const collection = await dbService.getCollection('song');
-    const songs = await collection.find({}).toArray();
+    const songs = await collection.find().toArray();
     return songs;
   } catch (err) {
     throw err;
@@ -50,14 +50,12 @@ async function add(song) {
 
 async function update(song) {
   const songToSave = { ...song };
-  if (!song._id) throw 'message id missing';
+  delete songToSave._id;
+  if (!song._id) throw 'song id missing';
   try {
     const criteria = { _id: ObjectId.createFromHexString(song._id) };
     const collection = await dbService.getCollection('song');
-    delete song._id;
-    const result = await collection.updateOne(criteria, { $set: songToSave });
-    console.log('updateOne result:', result);
-
+    await collection.updateOne(criteria, { $set: songToSave });
     return song;
   } catch (err) {
     throw err;

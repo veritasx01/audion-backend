@@ -10,10 +10,10 @@ import {
 
 const router = express.Router();
 
-router.get('/', getSongs);
+router.get('/', getSongs); // needs querying
 router.get('/:songId', getSong);
 router.put('/:songId', updateSong);
 router.post('/', addSong);
-//router.delete('/:songId', removeSong);
+router.delete('/:songId', removeSong); // make for admin only in the future
 
 export const songRoutes = router;
