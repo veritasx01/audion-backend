@@ -1,7 +1,7 @@
 import { dbService } from '../../services/db.service.js';
 import { ObjectId } from 'mongodb';
 
-export const songService = { query, getById, remove, add, update };
+export const songService = { query, getById, songExists, remove, add, update };
 
 async function query(filterBy = {}) {
   try {
@@ -21,6 +21,16 @@ async function getById(songId) {
     return song;
   } catch (err) {
     throw err;
+  }
+}
+
+async function songExists(songId) {
+  try {
+    const song = getById(songId);
+    if (!song) return false;
+    return true;
+  } catch (err) {
+    return false;
   }
 }
 
@@ -56,7 +66,8 @@ async function update(song) {
     const criteria = { _id: ObjectId.createFromHexString(song._id) };
     const collection = await dbService.getCollection('song');
     await collection.updateOne(criteria, { $set: songToSave });
-    return song;
+    const saved = await getById(song._id);
+    return saved;
   } catch (err) {
     throw err;
   }

@@ -12,7 +12,7 @@ const router = express.Router();
 
 router.get('/', getSongs); // needs querying
 router.get('/:songId', getSong);
-router.put('/:songId', updateSong);
+router.patch('/:songId', updateSong);
 router.post('/', addSong);
 router.delete('/:songId', removeSong); // make for admin only in the future
 
