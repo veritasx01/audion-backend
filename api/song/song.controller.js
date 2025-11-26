@@ -55,8 +55,6 @@ export async function updateSong(req, res) {
   }
 }
 
-export async function replaceSong(req, res) {}
-
 export async function addSong(req, res) {
   const song = {
     title: req.body.title,
