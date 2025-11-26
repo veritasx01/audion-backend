@@ -1,4 +1,5 @@
 import { dbService } from '../../services/db.service.js';
+import { loggerService } from '../../services/logger.service.js';
 import { ObjectId } from 'mongodb';
 
 export const songService = { query, getById, songExists, remove, add, update };
@@ -9,6 +10,7 @@ async function query(filterBy = {}) {
     const songs = await collection.find().toArray();
     return songs;
   } catch (err) {
+    loggerService.error('Failed to query songs', err);
     throw err;
   }
 }
@@ -20,6 +22,7 @@ async function getById(songId) {
     const song = await collection.findOne(criteria);
     return song;
   } catch (err) {
+    loggerService.error('Failed to get song by id', err);
     throw err;
   }
 }
@@ -44,6 +47,7 @@ async function remove(songId) {
     if (res.deletedCount === 0) return false; // nothing was deleted
     return true;
   } catch (err) {
+    loggerService.error('Failed to remove song', err);
     throw err;
   }
 }
@@ -54,6 +58,7 @@ async function add(song) {
     await collection.insertOne(song);
     return song;
   } catch (err) {
+    loggerService.error('Failed to add song', err);
     throw err;
   }
 }
@@ -65,10 +70,13 @@ async function update(song) {
   try {
     const criteria = { _id: ObjectId.createFromHexString(song._id) };
     const collection = await dbService.getCollection('song');
+    
     await collection.updateOne(criteria, { $set: songToSave });
     const saved = await getById(song._id);
+    
     return saved;
   } catch (err) {
+    loggerService.error('Failed to update song', err);
     throw err;
   }
 }
