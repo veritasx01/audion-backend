@@ -2,6 +2,11 @@
 node_modules/
 public/*
 !public/.gitkeep
-# Ignore prettier linter config file
-.prettierrc
+
+
+# exclude logs
+logs/
+
+# exclude linter config files
+.prettierrc 
 .vscode/   # Ignore VSCode config folder
