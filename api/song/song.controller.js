@@ -26,7 +26,7 @@ export async function updateSong(req, res) {
   if (!req.body || Object.keys(req.body).length === 0) {
     return res.status(200).send();
   }
-  if (!songService(songId)) {
+  if (!songService.songExists(songId)) {
     return res.status(404).send();
   }
   let song = {
