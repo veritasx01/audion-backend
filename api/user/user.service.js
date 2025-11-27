@@ -1,6 +1,6 @@
 import { dbService, dbCollections } from '../../services/db.service.js';
 import { utilService } from '../../services/util.service.js';
-import { logger } from '../../services/logger.service.js';
+import { loggerService } from '../../services/logger.service.js';
 import { ObjectId } from 'mongodb';
 
 export const userService = {
@@ -27,7 +27,7 @@ async function query(filterBy = {}) {
     });
     return users;
   } catch (err) {
-    logger.error('cannot find users', err);
+    loggerService.error('cannot find users', err);
     throw err;
   }
 }
@@ -44,7 +44,7 @@ async function getById(userId) {
 
     return user;
   } catch (err) {
-    logger.error(`while finding user by id: ${userId}`, err);
+    loggerService.error(`while finding user by id: ${userId}`, err);
     throw err;
   }
 }
@@ -55,7 +55,7 @@ async function getByUsername(username) {
     const user = await collection.findOne({ username: username.toLowerCase() });
     return user;
   } catch (err) {
-    logger.error(`while finding user by username: ${username}`, err);
+    loggerService.error(`while finding user by username: ${username}`, err);
     throw err;
   }
 }
@@ -70,7 +70,7 @@ async function getByEmail(email, userIdToExclude = null) {
     const user = await collection.findOne(criteria);
     return user;
   } catch (err) {
-    logger.error(`Failed querying a user by email: ${email}`, err);
+    loggerService.error(`Failed querying a user by email: ${email}`, err);
     throw err;
   }
 }
@@ -82,7 +82,7 @@ async function remove(userId) {
     const collection = await dbService.getCollection(dbCollections.USER);
     await collection.deleteOne(criteria);
   } catch (err) {
-    logger.error(`cannot remove user ${userId}`, err);
+    loggerService.error(`cannot remove user ${userId}`, err);
     throw err;
   }
 }
@@ -117,7 +117,7 @@ async function update(user) {
     await collection.updateOne({ _id: userToSave._id }, { $set: userToSave });
     return userToSave;
   } catch (err) {
-    logger.error(`cannot update user ${user._id}`, err);
+    loggerService.error(`cannot update user ${user._id}`, err);
     throw err;
   }
 }
@@ -137,7 +137,7 @@ async function add(user) {
     await collection.insertOne(userToAdd);
     return userToAdd;
   } catch (err) {
-    logger.error('cannot add user', err);
+    loggerService.error('cannot add user', err);
     throw err;
   }
 }
@@ -148,7 +148,7 @@ async function getUserPlaylistsByUserId(userId) {
     const user = await getById(userId);
     getUserPlaylists(user);
   } catch (err) {
-    logger.error(`Error fetching user playlists: ${err.message}`, err);
+    loggerService.error(`Error fetching user playlists: ${err.message}`, err);
     throw err;
   }
 }
@@ -181,7 +181,7 @@ async function getUserPlaylists(user) {
 
     return playlists;
   } catch (err) {
-    logger.error(`Error fetching user playlists: ${err.message}`, err);
+    loggerService.error(`Error fetching user playlists: ${err.message}`, err);
     throw err;
   }
 }
