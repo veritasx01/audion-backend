@@ -1,5 +1,5 @@
 import express from 'express';
-import { requireAuth, requireAdmin } from '../../middleware/require-auth.js'; from '../../middleware/require-admin.js';
+import { requireAuth, requireAdmin } from '../../middleware/require-auth.js';
 import {
   getUser,
   getUsers,
