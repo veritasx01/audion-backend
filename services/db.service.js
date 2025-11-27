@@ -5,6 +5,11 @@ import { config } from '../config/db/index.js';
 // console.log('config:', config)
 
 export const dbService = { getCollection };
+export const dbCollections = {
+  USER: 'user',
+  SONG: 'song',
+  PLAYLIST: 'playlist',
+};
 
 var dbConn = null;
 
