@@ -4,6 +4,7 @@ import cors from 'cors';
 import path from 'path';
 import cookieParser from 'cookie-parser';
 import { songRoutes } from './api/song/song.routes.js';
+import { authRoutes } from './api/auth/auth.routes.js';
 import { logRequest } from './middleware/logger.middleware.js';
 import { loggerService } from './services/logger.service.js';
 
@@ -22,6 +23,7 @@ app.set('query parser', 'extended');
 app.use(logRequest); // log all incoming requests with custom logger middleware
 
 app.use('/api/song', songRoutes);
+app.use('/api/auth', authRoutes);
 
 app.get(/.*/, (req, res) => {
   res.sendFile(path.resolve('public/index.html'));
