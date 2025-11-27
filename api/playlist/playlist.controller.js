@@ -25,7 +25,6 @@ export async function getPlaylist(req, res) {
 }
 
 export async function updatePlaylist(req, res) {
-  
   const playlist = {
     name: req.body.name,
     description: req.body.description,
