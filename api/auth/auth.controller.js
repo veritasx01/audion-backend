@@ -44,7 +44,7 @@ export async function signup(req, res) {
 
     const loginToken = authService.generateToken(user);
     res.cookie('loginToken', loginToken, cookieOptions);
-    res.json(user);
+    res.status(201).json(user);
   } catch (err) {
     loggerService.error('Failed to signup ' + err);
     res.status(400).send({ err: 'Failed to signup' });
