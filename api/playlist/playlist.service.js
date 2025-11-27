@@ -1,7 +1,14 @@
 import { dbService } from '../../services/db.service.js';
 import { ObjectId } from 'mongodb';
 
-export const playlistService = { query, getById, remove, add, update };
+export const playlistService = {
+  query,
+  getById,
+  playlistExists,
+  remove,
+  add,
+  update,
+};
 
 async function query(filterBy = {}) {
   try {
@@ -21,6 +28,16 @@ async function getById(playlistId) {
     return playlist;
   } catch (err) {
     throw err;
+  }
+}
+
+async function playlistExists(playlistId) {
+  try {
+    const playlist = getById(playlistId);
+    if (!playlist) return false;
+    return true;
+  } catch (err) {
+    return false;
   }
 }
 
@@ -50,16 +67,18 @@ async function add(playlist) {
 
 async function update(playlist) {
   const playlistToSave = { ...playlist };
-  if (!playlist._id) throw 'message id missing';
+  delete playlistToSave._id;
+  if (!playlist._id) throw 'playlist id missing';
   try {
     const criteria = { _id: ObjectId.createFromHexString(playlist._id) };
     const collection = await dbService.getCollection('playlist');
-    delete playlist._id;
-    const result = await collection.updateOne(criteria, { $set: playlistToSave });
-    console.log('updateOne result:', result);
 
-    return playlist;
+    await collection.updateOne(criteria, { $set: playlistToSave });
+    const saved = await getById(playlist._id);
+
+    return saved;
   } catch (err) {
+    loggerService.error('Failed to update playlist', err);
     throw err;
   }
 }

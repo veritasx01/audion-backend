@@ -25,7 +25,15 @@ export async function getPlaylist(req, res) {
 }
 
 export async function updatePlaylist(req, res) {
-  const playlist = {
+  const { playlistId } = req.params;
+  if (!req.body || Object.keys(req.body).length === 0) {
+    return res.status(200).send();
+  }
+  if (!playlistService.playlistExists(playlistId)) {
+    return res.status(404).send({ error: 'Resource does not exist' });
+  }
+  let playlist = {
+    _id: playlistId,
     name: req.body.name,
     description: req.body.description,
     thumbnail: req.body.thumbnail,
@@ -33,6 +41,19 @@ export async function updatePlaylist(req, res) {
     createdBy: req.body.createdBy,
     songs: req.body.songs,
   };
+  // only update fields which have content
+  playlist = Object.fromEntries(
+    Object.entries(playlist).filter(
+      ([key, value]) => value !== null && value !== undefined
+    )
+  );
+  try {
+    await playlistService.update(playlist);
+    res.status(200).send(playlist);
+  } catch (err) {
+    loggerService.error(err);
+    res.status(500).send({ error: err });
+  }
 }
 
 export async function addPlaylist(req, res) {
