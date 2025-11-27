@@ -12,7 +12,7 @@ const router = express.Router();
 // Routes for /api/user
 router.get('/', getUsers);
 router.get('/:id', getUser);
-router.patch('/:id', requireAdmin, updateUser);
+router.patch('/:id', requireAuth, updateUser);
 router.delete('/:id', requireAdmin, deleteUser);
 
 export const userRoutes = router;
