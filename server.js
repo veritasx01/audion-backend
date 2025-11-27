@@ -20,6 +20,7 @@ app.use(express.json());
 app.use(express.static('public'));
 app.use(cookieParser());
 app.set('query parser', 'extended');
+app.all('/*all', setupAsyncLocalStorage); // setup ALS with logged in user for all routes
 app.use(logRequest); // log all incoming requests with custom logger middleware
 
 app.use('/api/song', songRoutes);
