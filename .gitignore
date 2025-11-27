@@ -9,4 +9,5 @@ logs/
 
 # exclude linter config files
 .prettierrc 
-.vscode/   # Ignore VSCode config folder
+
+.vscode/  
