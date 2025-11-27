@@ -1,4 +1,4 @@
 export default {
-    dbURL: 'mongodb://127.0.0.1:27017',
-    dbName: 'audion'
-}
+  dbURL: process.env.DEV_DB_URL || 'mongodb://localhost:27017/audion',
+  dbName: 'audion',
+};
