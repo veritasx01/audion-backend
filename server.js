@@ -7,6 +7,7 @@ import { songRoutes } from './api/song/song.routes.js';
 import { authRoutes } from './api/auth/auth.routes.js';
 import { userRoutes } from './api/user/user.routes.js';
 import { logRequest } from './middleware/logger.middleware.js';
+import { setupAsyncLocalStorage } from './middleware/setupAls.middleware.js';
 import { loggerService } from './services/logger.service.js';
 
 const app = express();
