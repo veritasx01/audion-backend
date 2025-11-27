@@ -76,10 +76,11 @@ async function signup({
   if (!username || !password || !fullname)
     throw 'Missing required signup information';
 
-  const userExist = await userService.getByUsername(username);
-  if (userExist) throw 'Username already taken';
+  const userExists = await userService.getByUsername(username);
+  if (userExists) throw 'Username already taken';
 
-  // TBD check that email is unique as well
+  const emailExists = email && (await userService.getByEmail(email));
+  if (emailExists) throw 'Email already in use';
 
   const hashedPassword = await bcrypt.hash(password, saltRounds);
   return userService.add({
