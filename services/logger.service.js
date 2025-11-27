@@ -40,7 +40,7 @@ function doLog(level, ...args) {
 
   // Add currently logged-in user from ALS to the log record
   const alsStore = asyncLocalStorage.getStore();
-  const { username } = alsStore?.loggedinUser?.username;
+  const username = alsStore?.loggedinUser?.username;
   const userNameStr = username ? `(user: ${username})` : '';
 
   logMsg = `${getTime()} - ${level} - ${userNameStr} ${logMsg}\n`;
