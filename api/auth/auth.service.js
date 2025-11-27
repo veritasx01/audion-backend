@@ -4,6 +4,15 @@ import jwt from 'jsonwebtoken'; // for generating and verifying JWT tokens
 import { userService } from '../user/user.service.js';
 import { loggerService } from '../../services/logger.service.js';
 
+// Export error constants separately for better organization
+export const AUTH_ERRORS = {
+  INVALID_USERNAME: 'Unkown username',
+  INVALID_CREDENTIALS: 'Invalid username or password',
+  MISSING_SIGNUP_INFO: 'Missing required signup information',
+  USERNAME_IN_USE: 'Username already taken',
+  EMAIL_IN_USE: 'Email already in use',
+};
+
 export const authService = {
   generateToken,
   validateToken,
@@ -43,11 +52,11 @@ function validateToken(token) {
 
 async function login(username, password) {
   var user = await userService.getByUsername(username);
-  if (!user) throw 'Unkown username';
+  if (!user) throw AUTH_ERRORS.INVALID_USERNAME;
 
   // hash the given password and compare it with the stored hashed password
   const match = await bcrypt.compare(password, user.password);
-  if (!match) throw 'Invalid username or password';
+  if (!match) throw AUTH_ERRORS.INVALID_CREDENTIALS;
 
   const miniUser = {
     _id: user._id,
@@ -74,13 +83,13 @@ async function signup({
     `auth.service - signup with username: ${username}, fullname: ${fullname}`
   );
   if (!username || !password || !fullname)
-    throw 'Missing required signup information';
+    throw AUTH_ERRORS.MISSING_SIGNUP_INFO;
 
   const userExists = await userService.getByUsername(username);
-  if (userExists) throw 'Username already taken';
+  if (userExists) throw AUTH_ERRORS.USERNAME_IN_USE;
 
   const emailExists = email && (await userService.getByEmail(email));
-  if (emailExists) throw 'Email already in use';
+  if (emailExists) throw AUTH_ERRORS.EMAIL_IN_USE;
 
   const hashedPassword = await bcrypt.hash(password, saltRounds);
   return userService.add({

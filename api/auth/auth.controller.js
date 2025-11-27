@@ -1,4 +1,4 @@
-import { authService } from './auth.service.js';
+import { authService, AUTH_ERRORS } from './auth.service.js';
 import { loggerService } from './../../services/logger.service.js';
 
 const cookieOptions = {
@@ -23,7 +23,17 @@ export async function login(req, res) {
     res.json(user);
   } catch (err) {
     loggerService.error('Failed to Login', err);
-    res.status(401).send({ err: 'Failed to Login' });
+
+    // Handle specific error messages
+    if (
+      err === AUTH_ERRORS.INVALID_CREDENTIALS ||
+      err === AUTH_ERRORS.INVALID_USERNAME
+    ) {
+      return res.status(401).send({ err: 'Invalid username or password' });
+    }
+
+    // Generic error for unexpected issues
+    res.status(500).send({ err: 'Login failed. Please try again.' });
   }
 }
 
@@ -47,7 +57,24 @@ export async function signup(req, res) {
     res.status(201).json(user);
   } catch (err) {
     loggerService.error('Failed to signup ' + err);
-    res.status(400).send({ err: 'Failed to signup' });
+
+    // Handle specific error messages
+    if (err === AUTH_ERRORS.MISSING_SIGNUP_INFO) {
+      return res
+        .status(400)
+        .send({ err: 'Please fill in all required fields' });
+    }
+    if (
+      err === AUTH_ERRORS.USERNAME_IN_USE ||
+      err === AUTH_ERRORS.EMAIL_IN_USE
+    ) {
+      return res.status(409).send({
+        err: 'Account with these credentials already exists. Please try a different username/email.',
+      });
+    }
+
+    // Generic error for unexpected issues
+    res.status(500).send({ err: 'Signup failed. Please try again.' });
   }
 }
 
