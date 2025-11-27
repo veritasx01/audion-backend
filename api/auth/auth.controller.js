@@ -1,4 +1,4 @@
-import { authService, AUTH_ERRORS } from './auth.service.js';
+import { authService, AuthErrors } from './auth.service.js';
 import { loggerService } from './../../services/logger.service.js';
 
 const cookieOptions = {
@@ -26,8 +26,8 @@ export async function login(req, res) {
 
     // Handle specific error messages
     if (
-      err === AUTH_ERRORS.INVALID_CREDENTIALS ||
-      err === AUTH_ERRORS.INVALID_USERNAME
+      err === AuthErrors.INVALID_CREDENTIALS ||
+      err === AuthErrors.INVALID_USERNAME
     ) {
       return res.status(401).send({ err: 'Invalid username or password' });
     }
@@ -59,15 +59,12 @@ export async function signup(req, res) {
     loggerService.error('Failed to signup ' + err);
 
     // Handle specific error messages
-    if (err === AUTH_ERRORS.MISSING_SIGNUP_INFO) {
+    if (err === AuthErrors.MISSING_SIGNUP_INFO) {
       return res
         .status(400)
         .send({ err: 'Please fill in all required fields' });
     }
-    if (
-      err === AUTH_ERRORS.USERNAME_IN_USE ||
-      err === AUTH_ERRORS.EMAIL_IN_USE
-    ) {
+    if (err === AuthErrors.USERNAME_IN_USE || err === AuthErrors.EMAIL_IN_USE) {
       return res.status(409).send({
         err: 'Account with these credentials already exists. Please try a different username/email.',
       });

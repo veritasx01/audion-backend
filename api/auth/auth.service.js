@@ -5,12 +5,14 @@ import { userService } from '../user/user.service.js';
 import { loggerService } from '../../services/logger.service.js';
 
 // Export error constants separately for better organization
-export const AUTH_ERRORS = {
-  INVALID_USERNAME: 'Unkown username',
+export const AuthErrors = {
+  INVALID_USERNAME: 'Invalid username',
   INVALID_CREDENTIALS: 'Invalid username or password',
   MISSING_SIGNUP_INFO: 'Missing required signup information',
   USERNAME_IN_USE: 'Username already taken',
   EMAIL_IN_USE: 'Email already in use',
+  USER_IS_NOT_AUTHENTICATED: 'User is not authenticated',
+  ACCESS_FORBIDDEN: 'User does not have permission to perform this action',
 };
 
 export const authService = {
@@ -52,11 +54,11 @@ function validateToken(token) {
 
 async function login(username, password) {
   var user = await userService.getByUsername(username);
-  if (!user) throw AUTH_ERRORS.INVALID_USERNAME;
+  if (!user) throw AuthErrors.INVALID_USERNAME;
 
   // hash the given password and compare it with the stored hashed password
   const match = await bcrypt.compare(password, user.password);
-  if (!match) throw AUTH_ERRORS.INVALID_CREDENTIALS;
+  if (!match) throw AuthErrors.INVALID_CREDENTIALS;
 
   const miniUser = {
     _id: user._id,
@@ -66,6 +68,7 @@ async function login(username, password) {
     imgUrl: user.imgUrl,
     // playlist: user.playlists TBD for library feature
   };
+
   return miniUser;
 }
 
@@ -82,14 +85,13 @@ async function signup({
   loggerService.debug(
     `auth.service - signup with username: ${username}, fullname: ${fullname}`
   );
-  if (!username || !password || !fullname)
-    throw AUTH_ERRORS.MISSING_SIGNUP_INFO;
+  if (!username || !password || !fullname) throw AuthErrors.MISSING_SIGNUP_INFO;
 
   const userExists = await userService.getByUsername(username);
-  if (userExists) throw AUTH_ERRORS.USERNAME_IN_USE;
+  if (userExists) throw AuthErrors.USERNAME_IN_USE;
 
   const emailExists = email && (await userService.getByEmail(email));
-  if (emailExists) throw AUTH_ERRORS.EMAIL_IN_USE;
+  if (emailExists) throw AuthErrors.EMAIL_IN_USE;
 
   const hashedPassword = await bcrypt.hash(password, saltRounds);
   return userService.add({

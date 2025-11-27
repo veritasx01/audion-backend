@@ -1,6 +1,8 @@
 import { dbService, dbCollections } from '../../services/db.service.js';
 import { utilService } from '../../services/util.service.js';
 import { loggerService } from '../../services/logger.service.js';
+import { AuthErrors } from '../auth/auth.service.js';
+import { asyncLocalStorage } from '../../services/als.service.js';
 import { ObjectId } from 'mongodb';
 
 export const userService = {
@@ -93,7 +95,7 @@ async function update(user) {
   try {
     // validate logged in user is authorized to update this users profile
     if (!isAdmin && user._id !== loggedInUserId) {
-      throw new Error('Unauthorized');
+      throw new Error(AuthErrors.ACCESS_FORBIDDEN);
     }
 
     const userToSave = utilService.removeEmptyObjectFields({
@@ -110,7 +112,7 @@ async function update(user) {
         user._id
       );
       if (existingUserWithThisEmail) {
-        throw new Error('Email already in use');
+        throw new Error(AuthErrors.EMAIL_IN_USE);
       }
     }
     const collection = await dbService.getCollection(dbCollections.USER);

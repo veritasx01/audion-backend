@@ -1,5 +1,6 @@
 import { userService } from './user.service.js';
 import { loggerService } from '../../services/logger.service.js';
+import { AuthErrors } from '../auth/auth.service.js';
 
 export async function getUser(req, res) {
   try {
@@ -39,6 +40,12 @@ export async function updateUser(req, res) {
     res.send(savedUser);
   } catch (err) {
     loggerService.error('Failed to update user', err);
-    res.status(400).send({ err: 'Failed to update user' });
+    if (err.message === AuthErrors.ACCESS_FORBIDDEN) {
+      res.status(403).send({ err: err.message });
+    } else if (err.message === AuthErrors.EMAIL_IN_USE) {
+      res.status(409).send({ err: err.message });
+    } else {
+      res.status(400).send({ err: 'Failed to update user' });
+    }
   }
 }
