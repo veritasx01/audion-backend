@@ -10,7 +10,7 @@ export const userService = {
   remove, // Delete (remove user)
   query, // List (of users)
   getByUsername, // Used for Login
-  getByEmail, // Used for signup unique email validation
+  getByEmail, // Used for validating email is unique during signup and updates
   getUserPlaylists, // Get playlists for a user
   getUserPlaylistsByUserId, // Get playlists for a user by his userId
 };
@@ -60,10 +60,14 @@ async function getByUsername(username) {
   }
 }
 
-async function getByEmail(email) {
+async function getByEmail(email, userIdToExclude = null) {
   try {
     const collection = await dbService.getCollection(dbCollections.USER);
-    const user = await collection.findOne({ email: email.toLowerCase() });
+    const criteria = { email: email.toLowerCase() };
+    if (userIdToExclude) {
+      criteria._id = { $ne: ObjectId.createFromHexString(userIdToExclude) };
+    }
+    const user = await collection.findOne(criteria);
     return user;
   } catch (err) {
     logger.error(`Failed querying a user by email: ${email}`, err);
@@ -84,13 +88,31 @@ async function remove(userId) {
 }
 
 async function update(user) {
+  const { loggedinUser } = asyncLocalStorage.getStore();
+  const { _id: loggedInUserId, isAdmin } = loggedinUser;
   try {
+    // validate logged in user is authorized to update this users profile
+    if (!isAdmin && user._id !== loggedInUserId) {
+      throw new Error('Unauthorized');
+    }
+
     const userToSave = utilService.removeEmptyObjectFields({
       _id: ObjectId.createFromHexString(user._id), // needed for the returnd obj
       fullname: user.fullname,
-      email: user.email,
+      email: user.email.toLowerCase(),
       imgUrl: user.imgUrl,
     });
+
+    // Check if email is already taken by another user
+    if (userToSave.email) {
+      const existingUserWithThisEmail = await getByEmail(
+        userToSave.email,
+        user._id
+      );
+      if (existingUserWithThisEmail) {
+        throw new Error('Email already in use');
+      }
+    }
     const collection = await dbService.getCollection(dbCollections.USER);
     await collection.updateOne({ _id: userToSave._id }, { $set: userToSave });
     return userToSave;
@@ -108,7 +130,7 @@ async function add(user) {
       fullname: user.fullname,
       email: user.email.toLowerCase(),
       imgUrl: user.imgUrl,
-      isAdmin: user.isAdmin,
+      // isAdmin: user.isAdmin, // TBD: only admin can create another admin
       playlists: [], // TBD: create & add default "liked songs" playlist
     };
     const collection = await dbService.getCollection(dbCollections.USER);
