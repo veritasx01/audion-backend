@@ -4,7 +4,10 @@ import cors from 'cors';
 import path from 'path';
 import cookieParser from 'cookie-parser';
 import { songRoutes } from './api/song/song.routes.js';
+import { authRoutes } from './api/auth/auth.routes.js';
+import { userRoutes } from './api/user/user.routes.js';
 import { logRequest } from './middleware/logger.middleware.js';
+import { setupAsyncLocalStorage } from './middleware/setupAls.middleware.js';
 import { loggerService } from './services/logger.service.js';
 
 const app = express();
@@ -19,9 +22,12 @@ app.use(express.json());
 app.use(express.static('public'));
 app.use(cookieParser());
 app.set('query parser', 'extended');
+app.all('/*all', setupAsyncLocalStorage); // setup ALS with logged in user for all routes
 app.use(logRequest); // log all incoming requests with custom logger middleware
 
 app.use('/api/song', songRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/user', userRoutes);
 
 app.get(/.*/, (req, res) => {
   res.sendFile(path.resolve('public/index.html'));
