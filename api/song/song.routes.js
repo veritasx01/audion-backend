@@ -10,10 +10,11 @@ import {
 
 const router = express.Router();
 
+// Routes for /api/song
 router.get('/', getSongs); // needs querying
 router.get('/:songId', getSong);
-router.patch('/:songId', requireAuth, updateSong);
-router.post('/', requireAuth, addSong);
-router.delete('/:songId', requireAdmin, removeSong); // make for admin only in the future
+router.patch('/:songId', updateSong);
+router.post('/', addSong);
+router.delete('/:songId', requireAdmin, removeSong);
 
 export const songRoutes = router;

@@ -34,7 +34,7 @@ export async function getSong(req, res) {
 export async function updateSong(req, res) {
   const { songId } = req.params;
   if (!req.body || Object.keys(req.body).length === 0) {
-    return res.status(200).send();
+    return res.status(400).send();
   }
   if (!songService.songExists(songId)) {
     return res.status(404).send();
@@ -58,14 +58,16 @@ export async function updateSong(req, res) {
     )
   );
   try {
-    await songService.update(song);
-    res.status(200).send(song);
+    const modifiedSong = await songService.update(song);
+    res.json(modifiedSong);
   } catch (err) {
+    loggerService.error(`Failed to update song ${songId}`, err);
     res.status(500).send({ error: err });
   }
 }
 
 export async function addSong(req, res) {
+  const { body: car } = req;
   const song = {
     title: req.body.title,
     artist: req.body.artist,
@@ -78,10 +80,11 @@ export async function addSong(req, res) {
     credits: req.body.credits,
   };
   try {
-    await songService.add(song);
-    res.status(200).send(song);
+    const addedSong = await songService.add(song);
+    res.json(addedSong);
   } catch (err) {
-    res.status(500).send({ error: err });
+    loggerService.error('Failed to add song', err);
+    res.status(400).send({ error: err });
   }
 }
 

@@ -90,15 +90,14 @@ async function add(song) {
 async function update(song) {
   const songToSave = { ...song };
   delete songToSave._id;
-  if (!song._id) throw 'song id missing';
+  if (!song._id) throw 'Song ID Missing';
   try {
     const criteria = { _id: ObjectId.createFromHexString(song._id) };
     const collection = await dbService.getCollection(dbCollections.SONG);
 
     await collection.updateOne(criteria, { $set: songToSave });
-    const saved = await getById(song._id);
-
-    return saved;
+    const updatedSong = await getById(song._id);
+    return updatedSong;
   } catch (err) {
     loggerService.error('Failed to update song', err);
     throw err;
