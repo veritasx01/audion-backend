@@ -3,7 +3,6 @@ export const playlists = [
     title: 'Pop Hits',
     description: 'Top pop songs',
     createdBy: {
-      _id: '123456789',
       username: 'johndoe',
       fullName: 'John Doe',
       email: 'johndoe@example.com',
@@ -15,7 +14,6 @@ export const playlists = [
     createdAt: '2025-12-10T09:28:58.887Z',
     songs: [
       {
-        _id: '8',
         title: 'Let It Be',
         artist: 'The Beatles',
         duration: 243,
@@ -27,7 +25,6 @@ export const playlists = [
         addedAt: '2025-12-10T09:28:58.887Z',
       },
       {
-        _id: '5',
         title: 'Hey Jude',
         artist: 'The Beatles',
         duration: 431,
@@ -39,7 +36,6 @@ export const playlists = [
         addedAt: '2025-12-10T09:28:58.887Z',
       },
       {
-        _id: '15',
         title: "Rocket Man (I Think It's Going to Be a Long, Long Time)",
         artist: 'Elton John',
         duration: 282,
@@ -51,7 +47,6 @@ export const playlists = [
         addedAt: '2025-12-10T09:28:58.887Z',
       },
       {
-        _id: '2',
         title: 'Imagine',
         artist: 'John Lennon',
         duration: 183,
@@ -63,7 +58,6 @@ export const playlists = [
         addedAt: '2025-12-10T09:28:58.887Z',
       },
       {
-        _id: '12',
         title: 'You Belong With Me',
         artist: 'Taylor Swift',
         duration: 228,
@@ -75,7 +69,6 @@ export const playlists = [
         addedAt: '2025-12-10T09:28:58.887Z',
       },
       {
-        _id: '14',
         title: 'Tiny Dancer',
         artist: 'Elton John',
         duration: 406,
@@ -87,7 +80,6 @@ export const playlists = [
         addedAt: '2025-12-10T09:28:58.887Z',
       },
       {
-        _id: '16',
         title: 'Goodbye Yellow Brick Road',
         artist: 'Elton John',
         duration: 192,
@@ -100,13 +92,11 @@ export const playlists = [
       },
     ],
     thumbnail: 'https://img.youtube.com/vi/CGj85pVzRJs/hqdefault.jpg',
-    _id: 'tvBj75RM3GGnzGmL',
   },
   {
     title: 'Jazz Vibes',
     description: 'Smooth jazz tunes',
     createdBy: {
-      _id: 'msU4Fv0yJ9Uq3jmB',
       username: 'user1',
       fullName: 'Alice Johnson',
       email: 'alice@example.com',
@@ -115,7 +105,6 @@ export const playlists = [
     createdAt: '2025-12-10T09:28:58.887Z',
     songs: [
       {
-        _id: '10',
         title: 'What a Wonderful World',
         artist: 'Louis Armstrong',
         duration: 140,
@@ -127,7 +116,6 @@ export const playlists = [
         addedAt: '2025-12-10T09:28:58.887Z',
       },
       {
-        _id: '19',
         title: 'My Favorite Things',
         artist: 'John Coltrane',
         duration: 826,
@@ -139,7 +127,6 @@ export const playlists = [
         addedAt: '2025-12-10T09:28:58.887Z',
       },
       {
-        _id: '4',
         title: 'Take Five',
         artist: 'Dave Brubeck',
         duration: 324,
@@ -152,13 +139,11 @@ export const playlists = [
       },
     ],
     thumbnail: 'https://img.youtube.com/vi/rBrd_3VMC3c/hqdefault.jpg',
-    _id: 'dHGWmVQWvRK4Qurw',
   },
   {
     title: 'Rock Anthems',
     description: 'Classic rock tunes',
     createdBy: {
-      _id: '123456789',
       username: 'johndoe',
       fullName: 'John Doe',
       email: 'johndoe@example.com',
@@ -170,7 +155,6 @@ export const playlists = [
     createdAt: '2025-12-10T09:28:58.887Z',
     songs: [
       {
-        _id: '6',
         title: 'Hotel California',
         artist: 'Eagles',
         duration: 390,
@@ -182,7 +166,6 @@ export const playlists = [
         addedAt: '2025-12-10T09:28:58.887Z',
       },
       {
-        _id: '9',
         title: 'Purple Haze',
         artist: 'Jimi Hendrix',
         duration: 170,
@@ -194,7 +177,6 @@ export const playlists = [
         addedAt: '2025-12-10T09:28:58.887Z',
       },
       {
-        _id: '2',
         title: 'Imagine',
         artist: 'John Lennon',
         duration: 183,
@@ -206,7 +188,6 @@ export const playlists = [
         addedAt: '2025-12-10T09:28:58.887Z',
       },
       {
-        _id: '17',
         title: 'Fat Old Sun',
         artist: 'Pink Floyd',
         duration: 228,
@@ -218,7 +199,6 @@ export const playlists = [
         addedAt: '2025-12-10T09:28:58.887Z',
       },
       {
-        _id: '1',
         title: 'Stairway to Heaven',
         artist: 'Led Zeppelin',
         duration: 482,
@@ -230,7 +210,6 @@ export const playlists = [
         addedAt: '2025-12-10T09:28:58.887Z',
       },
       {
-        _id: '7',
         title: 'Bohemian Rhapsody',
         artist: 'Queen',
         duration: 354,
@@ -243,13 +222,11 @@ export const playlists = [
       },
     ],
     thumbnail: 'https://img.youtube.com/vi/dLl4PZtxia8/hqdefault.jpg',
-    _id: 'lOv3TOK4gF7w1aUi',
   },
   {
     title: 'Blues Essentials',
     description: 'Classic blues tracks',
     createdBy: {
-      _id: 'msU4Fv0yJ9Uq3jmB',
       username: 'user1',
       fullName: 'Alice Johnson',
       email: 'alice@example.com',
@@ -258,7 +235,6 @@ export const playlists = [
     createdAt: '2025-12-10T09:28:58.887Z',
     songs: [
       {
-        _id: '18',
         title: "It's My Own Fault",
         artist: 'B.B. King',
         duration: 189,
@@ -270,7 +246,6 @@ export const playlists = [
         addedAt: '2025-12-10T09:28:58.887Z',
       },
       {
-        _id: '3',
         title: 'Superstition',
         artist: 'Stevie Wonder',
         duration: 250,
@@ -283,13 +258,11 @@ export const playlists = [
       },
     ],
     thumbnail: 'https://img.youtube.com/vi/Z9DoUHO-OVo/hqdefault.jpg',
-    _id: 'Ql4wmlmszZddfznm',
   },
   {
     title: 'The Beatles Collection',
     description: 'Hits from The Beatles and solo works',
     createdBy: {
-      _id: 'p8kcIULEZDcSxh7l',
       username: 'user2',
       fullName: 'Bob Smith',
       email: 'bob@example.com',
@@ -298,7 +271,6 @@ export const playlists = [
     createdAt: '2025-12-10T09:28:58.887Z',
     songs: [
       {
-        _id: '8',
         title: 'Let It Be',
         artist: 'The Beatles',
         duration: 243,
@@ -310,7 +282,6 @@ export const playlists = [
         addedAt: '2025-12-10T09:28:58.887Z',
       },
       {
-        _id: '5',
         title: 'Hey Jude',
         artist: 'The Beatles',
         duration: 431,
@@ -323,13 +294,11 @@ export const playlists = [
       },
     ],
     thumbnail: 'https://img.youtube.com/vi/CGj85pVzRJs/hqdefault.jpg',
-    _id: 'KfunXCdEgXLvZwrN',
   },
   {
     title: 'Elton John Greatest Hits',
     description: 'Hits from Elton John',
     createdBy: {
-      _id: '123456789',
       username: 'johndoe',
       fullName: 'John Doe',
       email: 'johndoe@example.com',
@@ -341,7 +310,6 @@ export const playlists = [
     createdAt: '2025-12-10T09:28:58.887Z',
     songs: [
       {
-        _id: '15',
         title: "Rocket Man (I Think It's Going to Be a Long, Long Time)",
         artist: 'Elton John',
         duration: 282,
@@ -353,7 +321,6 @@ export const playlists = [
         addedAt: '2025-12-10T09:28:58.887Z',
       },
       {
-        _id: '14',
         title: 'Tiny Dancer',
         artist: 'Elton John',
         duration: 406,
@@ -365,7 +332,6 @@ export const playlists = [
         addedAt: '2025-12-10T09:28:58.887Z',
       },
       {
-        _id: '16',
         title: 'Goodbye Yellow Brick Road',
         artist: 'Elton John',
         duration: 192,
@@ -378,13 +344,11 @@ export const playlists = [
       },
     ],
     thumbnail: 'https://img.youtube.com/vi/DtVBCG6ThDk/hqdefault.jpg',
-    _id: 'wEQzx9aP06bpKFHS',
   },
   {
     title: 'Psychedelic Rock',
     description: 'Trippy and mind-bending rock tunes',
     createdBy: {
-      _id: 'p8kcIULEZDcSxh7l',
       username: 'user2',
       fullName: 'Bob Smith',
       email: 'bob@example.com',
@@ -393,7 +357,6 @@ export const playlists = [
     createdAt: '2025-12-10T09:28:58.887Z',
     songs: [
       {
-        _id: '9',
         title: 'Purple Haze',
         artist: 'Jimi Hendrix',
         duration: 170,
@@ -405,7 +368,6 @@ export const playlists = [
         addedAt: '2025-12-10T09:28:58.887Z',
       },
       {
-        _id: '17',
         title: 'Fat Old Sun',
         artist: 'Pink Floyd',
         duration: 228,
@@ -418,13 +380,11 @@ export const playlists = [
       },
     ],
     thumbnail: 'https://img.youtube.com/vi/cJunCsrhJjg/hqdefault.jpg',
-    _id: 'QcElEa5VwSu3qo6J',
   },
   {
     title: 'Country Roads',
     description: 'Best of country music',
     createdBy: {
-      _id: 'rxPhM5hiyI9Hazt5',
       username: 'user3',
       fullName: 'Charlie Brown',
       email: 'charlie@example.com',
@@ -433,7 +393,6 @@ export const playlists = [
     createdAt: '2025-12-10T09:28:58.887Z',
     songs: [
       {
-        _id: '11',
         title: 'Take Me Home, Country Roads',
         artist: 'John Denver',
         duration: 195,
@@ -446,13 +405,11 @@ export const playlists = [
       },
     ],
     thumbnail: 'https://img.youtube.com/vi/1vrEljMfXYo/hqdefault.jpg',
-    _id: 'gXFBcnxWYH8ppUgj',
   },
   {
     title: 'House Party',
     description: 'Upbeat house music tracks',
     createdBy: {
-      _id: 'rxPhM5hiyI9Hazt5',
       username: 'user3',
       fullName: 'Charlie Brown',
       email: 'charlie@example.com',
@@ -461,7 +418,6 @@ export const playlists = [
     createdAt: '2025-12-10T09:28:58.887Z',
     songs: [
       {
-        _id: '13',
         title: 'Saffron',
         artist: 'MF DOOM',
         duration: 204,
@@ -474,13 +430,11 @@ export const playlists = [
       },
     ],
     thumbnail: 'https://img.youtube.com/vi/tzGXVefQvS8/hqdefault.jpg',
-    _id: 'QLVv8nLnewxJZgvJ',
   },
   {
     title: 'Rap Hits',
     description: 'Top rap songs',
     createdBy: {
-      _id: 'rxPhM5hiyI9Hazt5',
       username: 'user3',
       fullName: 'Charlie Brown',
       email: 'charlie@example.com',
@@ -489,7 +443,6 @@ export const playlists = [
     createdAt: '2025-12-10T09:28:58.887Z',
     songs: [
       {
-        _id: '20',
         title: 'Still D.R.E.',
         artist: 'Dr. Dre',
         duration: 271,
@@ -502,13 +455,11 @@ export const playlists = [
       },
     ],
     thumbnail: 'https://img.youtube.com/vi/u8iMde8kVho/hqdefault.jpg',
-    _id: 'Tp0AZU63ExWwOiXN',
   },
   {
     title: 'Liked Songs',
     description: 'Your collection of liked songs',
     createdBy: {
-      _id: '123456789',
       username: 'johndoe',
       fullName: 'John Doe',
       email: 'johndoe@example.com',
@@ -521,13 +472,11 @@ export const playlists = [
     songs: [],
     thumbnail: '/src/assets/images/liked-songs.jpg',
     isLikedSongs: true,
-    _id: '5yVDwRmRzGI4rU0F',
   },
   {
     title: 'Liked Songs',
     description: 'Your collection of liked songs',
     createdBy: {
-      _id: 'msU4Fv0yJ9Uq3jmB',
       username: 'user1',
       fullName: 'Alice Johnson',
       email: 'alice@example.com',
@@ -537,13 +486,11 @@ export const playlists = [
     songs: [],
     thumbnail: '/src/assets/images/liked-songs.jpg',
     isLikedSongs: true,
-    _id: 'VzIvW0OTFzUe2HNL',
   },
   {
     title: 'Liked Songs',
     description: 'Your collection of liked songs',
     createdBy: {
-      _id: 'p8kcIULEZDcSxh7l',
       username: 'user2',
       fullName: 'Bob Smith',
       email: 'bob@example.com',
@@ -553,13 +500,11 @@ export const playlists = [
     songs: [],
     thumbnail: '/src/assets/images/liked-songs.jpg',
     isLikedSongs: true,
-    _id: 'VG3XFWKiZn48GQVT',
   },
   {
     title: 'Liked Songs',
     description: 'Your collection of liked songs',
     createdBy: {
-      _id: 'rxPhM5hiyI9Hazt5',
       username: 'user3',
       fullName: 'Charlie Brown',
       email: 'charlie@example.com',
@@ -569,6 +514,5 @@ export const playlists = [
     songs: [],
     thumbnail: '/src/assets/images/liked-songs.jpg',
     isLikedSongs: true,
-    _id: 'w0Z3kzdWaPwbG6OR',
   },
 ];

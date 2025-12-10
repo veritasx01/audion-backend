@@ -1,6 +1,5 @@
 export const users = [
   {
-    _id: '123456789',
     username: 'johndoe',
     fullName: 'John Doe',
     email: 'johndoe@example.com',
@@ -15,7 +14,6 @@ export const users = [
     },
   },
   {
-    _id: 'msU4Fv0yJ9Uq3jmB',
     username: 'user1',
     fullName: 'Alice Johnson',
     email: 'alice@example.com',
@@ -25,7 +23,6 @@ export const users = [
     },
   },
   {
-    _id: 'p8kcIULEZDcSxh7l',
     username: 'user2',
     fullName: 'Bob Smith',
     email: 'bob@example.com',
@@ -35,7 +32,6 @@ export const users = [
     },
   },
   {
-    _id: 'rxPhM5hiyI9Hazt5',
     username: 'user3',
     fullName: 'Charlie Brown',
     email: 'charlie@example.com',
