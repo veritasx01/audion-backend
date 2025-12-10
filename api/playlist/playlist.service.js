@@ -1,5 +1,7 @@
-import { dbService } from '../../services/db.service.js';
 import { ObjectId } from 'mongodb';
+import { utilService } from '../../services/util.service.js';
+import { loggerService } from '../../services/logger.service.js';
+import { dbService, dbCollections } from '../../services/db.service.js';
 
 export const playlistService = {
   query,
@@ -10,12 +12,27 @@ export const playlistService = {
   update,
 };
 
-async function query(filterBy = {}) {
+const PAGE_SIZE = 50;
+
+async function query(filterBy = {}, sortBy, sortDir) {
   try {
-    const collection = await dbService.getCollection('playlist');
-    const playlists = await collection.find({}).toArray();
+    const criteria = _buildFilterCriteria(filterBy);
+    const sortObject = utilService.buildSortObject(sortBy, sortDir);
+    const collection = await dbService.getCollection(dbCollections.PLAYLIST);
+    var playlistCursor = await collection.find(criteria, sortObject);
+
+    if (filterBy.pageIdx !== undefined) {
+      playlistCursor.skip(filterBy.pageIdx * PAGE_SIZE).limit(PAGE_SIZE);
+    }
+
+    const playlists = await playlistCursor.toArray();
+
+    playlists.forEach(playlist => {
+      playlist.createdAt = playlist._id.getTimestamp();
+    });
     return playlists;
   } catch (err) {
+    loggerService.error('Failed to query playlists', err);
     throw err;
   }
 }
@@ -23,7 +40,7 @@ async function query(filterBy = {}) {
 async function getById(playlistId) {
   try {
     const criteria = { _id: ObjectId.createFromHexString(playlistId) };
-    const collection = await dbService.getCollection('playlist');
+    const collection = await dbService.getCollection(dbCollections.PLAYLIST);
     const playlist = await collection.findOne(criteria);
     return playlist;
   } catch (err) {
@@ -81,4 +98,39 @@ async function update(playlist) {
     loggerService.error('Failed to update playlist', err);
     throw err;
   }
+}
+
+function _buildFilterCriteria(filterBy) {
+  const criteria = {};
+
+  // Filter by specific playlist IDs (from user library)
+  if (
+    filterBy.playlistIds &&
+    Array.isArray(filterBy.playlistIds) &&
+    filterBy.playlistIds.length > 0
+  ) {
+    const playlistObjectIds = filterBy.playlistIds.map(id =>
+      typeof id === 'string' ? ObjectId.createFromHexString(id) : id
+    );
+    criteria._id = { $in: playlistObjectIds };
+  }
+
+  // Free text search across songs in playlists
+  if (filterBy.searchString) {
+    const searchRegex = { $regex: filterBy.searchString, $options: 'i' };
+    criteria.$or = [
+      { title: searchRegex }, // Search in playlist title
+      { description: searchRegex }, // Search in playlist description
+      { 'songs.title': searchRegex }, // Search in song titles
+      { 'songs.artist': searchRegex }, // Search in song artists
+      { 'songs.albumName': searchRegex }, // Search in song album names
+    ];
+  }
+
+  // Filter by genre - playlist must have at least one song with the genre
+  if (filterBy.genre) {
+    criteria['songs.genres'] = { $in: [filterBy.genre.toLowerCase()] };
+  }
+
+  return criteria;
 }

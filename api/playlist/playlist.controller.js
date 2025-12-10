@@ -3,11 +3,19 @@ import { playlistService } from './playlist.service.js';
 
 export async function getPlaylists(req, res) {
   try {
-    const playlists = await playlistService.query();
-    res.status(200).send(playlists);
+    const filterBy = {
+      playlistIds: req.query.playlistIds?.split(','),
+      searchString: req.query.q,
+      genre: req.query.genre,
+    };
+    const sortBy = req.query.sortBy || '';
+    const sortDir = +req.query.sortDir || 1; // 1 for ascending, -1 for descending
+
+    const playlists = await playlistService.query(filterBy, sortBy, sortDir);
+    res.json(playlists);
   } catch (err) {
     loggerService.error(err);
-    res.status(500).send({ error: err });
+    res.status(400).send({ error: err });
   }
 }
 
