@@ -103,7 +103,7 @@ async function update(user) {
 
     const userToSave = utilService.removeEmptyObjectFields({
       _id: ObjectId.createFromHexString(user._id), // needed for the returnd obj
-      fullname: user.fullname,
+      fullName: user.fullName,
       email: user.email.toLowerCase(),
       imgUrl: user.imgUrl,
     });
@@ -132,7 +132,7 @@ async function add(user) {
     const userToAdd = {
       username: user.username.toLowerCase(),
       password: user.password,
-      fullname: user.fullname,
+      fullName: user.fullName,
       email: user.email.toLowerCase(),
       imgUrl: user.imgUrl,
       // isAdmin: user.isAdmin, // TBD: only admin can create another admin
@@ -216,7 +216,7 @@ function _buildCriteria(filterBy) {
   const criteria = {};
   if (filterBy.name) {
     const nameCriteria = { $regex: filterBy.name, $options: 'i' };
-    criteria.$or = [{ username: nameCriteria }, { fullname: nameCriteria }];
+    criteria.$or = [{ username: nameCriteria }, { fullName: nameCriteria }];
   }
   if (filterBy.email) {
     criteria.email = filterBy.email;
