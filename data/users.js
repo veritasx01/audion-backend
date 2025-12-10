@@ -1,4 +1,4 @@
-import { DEFAULT_USER_USERNAME } from '../api/user/user.service';
+import { DEFAULT_USER_USERNAME } from '../api/user/user.service.js';
 
 export const users = [
   {

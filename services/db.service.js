@@ -1,4 +1,4 @@
-import { MongoClient } from 'mongodb';
+import { MongoClient, ObjectId } from 'mongodb';
 import { loggerService } from '../services/logger.service.js';
 
 import { config } from '../config/db/index.js';
@@ -78,7 +78,7 @@ async function _populateDB() {
           title: 'Liked Songs',
           description: 'Your collection of liked songs',
           createdBy: {
-            _id: user._id,
+            _id: user._id.toString(), // Convert to string
             username: user.username,
             fullName: user.fullName,
             email: user.email,
@@ -98,10 +98,10 @@ async function _populateDB() {
       const insertResult = await playlistCollection.insertMany(likedPlaylists);
       const insertedPlaylists = Object.values(insertResult.insertedIds);
 
-      // Update each user's library.playlists array with their liked playlist ID
+      // Update each user's library.playlists array with their liked playlist ID (as string)
       for (let i = 0; i < users.length; i++) {
         const user = users[i];
-        const playlistId = insertedPlaylists[i];
+        const playlistId = insertedPlaylists[i].toString(); // Convert to string
 
         await userCollection.updateOne(
           { _id: user._id },
@@ -138,7 +138,7 @@ async function _populateDB() {
             } Essentials`,
             description: `A curated collection of the best ${genre} tracks`,
             createdBy: {
-              _id: randomUser._id,
+              _id: randomUser._id.toString(), // Convert to string
               username: randomUser.username,
               fullName: randomUser.fullName,
               email: randomUser.email,
@@ -147,7 +147,7 @@ async function _populateDB() {
                 'https://randomuser.me/api/portraits/thumb/men/81.jpg',
             },
             songs: genreSongs.map(song => ({
-              _id: song._id,
+              _id: song._id.toString(), // Convert to string
               title: song.title,
               artist: song.artist,
               duration: song.duration,
@@ -171,8 +171,8 @@ async function _populateDB() {
           // Update users' libraries with their assigned genre playlists
           for (let i = 0; i < playlists.length; i++) {
             const playlist = playlists[i];
-            const playlistId = insertedPlaylistIds[i];
-            const userId = playlist.createdBy._id;
+            const playlistId = insertedPlaylistIds[i].toString(); // Convert to string
+            const userId = ObjectId.createFromHexString(playlist.createdBy._id); // Convert back to ObjectId for query
 
             // Add this playlist ID to the user's library.playlists array
             await userCollection.updateOne(
