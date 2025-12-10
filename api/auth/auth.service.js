@@ -62,12 +62,6 @@ async function login(username, password) {
 
   delete user.password;
   user._id = user._id.toString();
-  /* 
-  const miniUser = userService.mapUserToMiniUser(user);
-  miniUser.library = {
-    playlists: await userService.getUserPlaylists(user._id),
-  };
-  */
 
   return user;
 }
