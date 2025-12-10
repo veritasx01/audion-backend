@@ -1,6 +1,7 @@
-import { dbService } from '../../services/db.service.js';
-import { loggerService } from '../../services/logger.service.js';
 import { ObjectId } from 'mongodb';
+import { dbService, dbCollections } from '../../services/db.service.js';
+import { loggerService } from '../../services/logger.service.js';
+import { utilService } from '../../services/util.service.js';
 
 export const songService = { query, getById, songExists, remove, add, update };
 
@@ -12,7 +13,7 @@ async function query(filterBy = {}, sortBy, sortDir) {
     const criteria = _buildFilterCriteria(filterBy);
     const sort = _buildSort(sortBy, sortDir);
 
-    const collection = await dbService.getCollection('song');
+    const collection = await dbService.getCollection(dbCollections.SONG);
     var songCursor = await collection.find(criteria, { sort });
 
     if (filterBy.pageIdx !== undefined) {
@@ -20,6 +21,12 @@ async function query(filterBy = {}, sortBy, sortDir) {
     }
 
     const songs = await songCursor.toArray();
+
+    // Get UTC timestamp from song ID and Convert it to Israel timezone
+    songs.forEach(song => {
+      song.createdAt = song._id.getTimestamp();
+    });
+
     return songs;
   } catch (err) {
     loggerService.error('Failed to query songs', err);
@@ -30,8 +37,9 @@ async function query(filterBy = {}, sortBy, sortDir) {
 async function getById(songId) {
   try {
     const criteria = { _id: ObjectId.createFromHexString(songId) };
-    const collection = await dbService.getCollection('song');
+    const collection = await dbService.getCollection(dbCollections.SONG);
     const song = await collection.findOne(criteria);
+    song.createdAt = song._id.getTimestamp();
     return song;
   } catch (err) {
     loggerService.error('Failed to get song by id', err);
@@ -54,7 +62,7 @@ async function remove(songId) {
     const criteria = {
       _id: ObjectId.createFromHexString(songId),
     };
-    const collection = await dbService.getCollection('song');
+    const collection = await dbService.getCollection(dbCollections.SONG);
     const res = await collection.deleteOne(criteria);
     if (res.deletedCount === 0) return false; // nothing was deleted
     return true;
@@ -66,7 +74,7 @@ async function remove(songId) {
 
 async function add(song) {
   try {
-    const collection = await dbService.getCollection('song');
+    const collection = await dbService.getCollection(dbCollections.SONG);
     await collection.insertOne(song);
     return song;
   } catch (err) {
@@ -81,7 +89,7 @@ async function update(song) {
   if (!song._id) throw 'song id missing';
   try {
     const criteria = { _id: ObjectId.createFromHexString(song._id) };
-    const collection = await dbService.getCollection('song');
+    const collection = await dbService.getCollection(dbCollections.SONG);
 
     await collection.updateOne(criteria, { $set: songToSave });
     const saved = await getById(song._id);
