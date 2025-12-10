@@ -24,11 +24,11 @@ export async function getPlaylist(req, res) {
   try {
     const playlist = await playlistService.getById(playlistId);
     if (!playlist) {
-      res.status(404).send({ error: 'Resource does not exist' });
-    } else res.status(200).send(playlist);
+      res.status(404).send({ error: 'Resource not found' });
+    } else res.json(playlist);
   } catch (err) {
-    loggerService.error(err);
-    res.status(500).send({ error: err });
+    loggerService.error(`Failed to get playlist ${playlistId}`, err);
+    res.status(400).send({ error: err });
   }
 }
 

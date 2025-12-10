@@ -39,11 +39,19 @@ async function query(filterBy = {}, sortBy, sortDir) {
 
 async function getById(playlistId) {
   try {
-    const criteria = { _id: ObjectId.createFromHexString(playlistId) };
+    const criteria = {
+      _id:
+        typeof playlistId === 'string'
+          ? ObjectId.createFromHexString(playlistId)
+          : playlistId,
+    };
     const collection = await dbService.getCollection(dbCollections.PLAYLIST);
     const playlist = await collection.findOne(criteria);
+    if (!playlist) return null;
+    playlist.createdAt = playlist._id.getTimestamp();
     return playlist;
   } catch (err) {
+    loggerService.error('Failed to Get Playlist by ID', err);
     throw err;
   }
 }
