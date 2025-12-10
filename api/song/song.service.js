@@ -12,10 +12,9 @@ async function query(filterBy = {}, sortBy, sortDir) {
   console.log('✸ → filterBy:', filterBy);
   try {
     const criteria = _buildFilterCriteria(filterBy);
-    const sort = _buildSort(sortBy, sortDir);
-
+    const sortObject = utilService.buildSortObject(sortBy, sortDir);
     const collection = await dbService.getCollection(dbCollections.SONG);
-    var songCursor = await collection.find(criteria, { sort });
+    var songCursor = await collection.find(criteria, sortObject);
 
     if (filterBy.pageIdx !== undefined) {
       songCursor.skip(filterBy.pageIdx * PAGE_SIZE).limit(PAGE_SIZE);
@@ -126,9 +125,4 @@ function _buildFilterCriteria(filterBy) {
   }
 
   return criteria;
-}
-
-function _buildSort(sortBy, sortDir) {
-  if (!sortBy) return {};
-  return { [sortBy]: sortDir };
 }

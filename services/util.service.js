@@ -1,5 +1,6 @@
 export const utilService = {
   removeEmptyObjectFields,
+  buildSortObject,
 };
 
 export function removeEmptyObjectFields(obj) {
@@ -8,4 +9,9 @@ export function removeEmptyObjectFields(obj) {
       ([key, value]) => value !== null && value !== undefined
     )
   );
+}
+
+function buildSortObject(sortBy, sortDir) {
+  if (!sortBy) return { sort: {} };
+  return { sort: { [sortBy]: sortDir } };
 }
