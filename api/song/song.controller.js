@@ -2,8 +2,16 @@ import { songService } from './song.service.js';
 
 export async function getSongs(req, res) {
   try {
-    const songs = await songService.query();
-    res.status(200).send(songs);
+    const filterBy = {
+      searchString: req.query.q || '',
+      artist: req.query.artist || '',
+      pageIdx: req.query.pageIdx,
+    };
+    const sortBy = req.query.sortBy || '';
+    const sortDir = +req.query.sortDir || 1; // 1 for ascending, -1 for descending
+
+    const songs = await songService.query(filterBy, sortBy, sortDir);
+    res.json(songs);
   } catch (err) {
     res.status(500).send({ error: err });
   }
@@ -14,7 +22,7 @@ export async function getSong(req, res) {
   try {
     const song = await songService.getById(songId);
     if (!song) {
-      res.status(404).send({error: "Resource does not exist"})
+      res.status(404).send({ error: 'Resource does not exist' });
     } else res.status(200).send(song);
   } catch (err) {
     res.status(500).send({ error: err });
