@@ -4,10 +4,22 @@ import { ObjectId } from 'mongodb';
 
 export const songService = { query, getById, songExists, remove, add, update };
 
-async function query(filterBy = {}) {
+const PAGE_SIZE = 50;
+
+async function query(filterBy = {}, sortBy, sortDir) {
+  console.log('✸ → filterBy:', filterBy);
   try {
+    const criteria = _buildFilterCriteria(filterBy);
+    const sort = _buildSort(sortBy, sortDir);
+
     const collection = await dbService.getCollection('song');
-    const songs = await collection.find().toArray();
+    var songCursor = await collection.find(criteria, { sort });
+
+    if (filterBy.pageIdx !== undefined) {
+      songCursor.skip(filterBy.pageIdx * PAGE_SIZE).limit(PAGE_SIZE);
+    }
+
+    const songs = await songCursor.toArray();
     return songs;
   } catch (err) {
     loggerService.error('Failed to query songs', err);
@@ -70,13 +82,42 @@ async function update(song) {
   try {
     const criteria = { _id: ObjectId.createFromHexString(song._id) };
     const collection = await dbService.getCollection('song');
-    
+
     await collection.updateOne(criteria, { $set: songToSave });
     const saved = await getById(song._id);
-    
+
     return saved;
   } catch (err) {
     loggerService.error('Failed to update song', err);
     throw err;
   }
+}
+
+function _buildFilterCriteria(filterBy) {
+  const criteria = {};
+
+  // Add artist filter if specified (this will be ANDed with other criteria)
+  if (filterBy.artist) {
+    criteria.artist = { $regex: filterBy.artist, $options: 'i' };
+  }
+
+  // Add free text search functionality
+  if (filterBy.searchString) {
+    const searchRegex = { $regex: filterBy.searchString, $options: 'i' };
+
+    // When both artist and searchString are present, they are ANDed together
+    // The searchString searches across title, artist, and album
+    criteria.$or = [
+      { title: searchRegex },
+      { artist: searchRegex },
+      { albumName: searchRegex },
+    ];
+  }
+
+  return criteria;
+}
+
+function _buildSort(sortBy, sortDir) {
+  if (!sortBy) return {};
+  return { [sortBy]: sortDir };
 }
