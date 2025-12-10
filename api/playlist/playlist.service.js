@@ -58,24 +58,32 @@ async function getById(playlistId) {
 
 async function playlistExists(playlistId) {
   try {
-    const playlist = getById(playlistId);
+    const playlist = await getById(playlistId);
     if (!playlist) return false;
     return true;
   } catch (err) {
-    return false;
+    loggerService.error(
+      `Failed to check if playlist ${playlistId} exists`,
+      err
+    );
+    throw err;
   }
 }
 
 async function remove(playlistId) {
   try {
     const criteria = {
-      _id: ObjectId.createFromHexString(playlistId),
+      _id:
+        typeof playlistId === 'string'
+          ? ObjectId.createFromHexString(playlistId)
+          : playlistId,
     };
-    const collection = await dbService.getCollection('playlist');
+    const collection = await dbService.getCollection(dbCollections.PLAYLIST);
     const res = await collection.deleteOne(criteria);
-    if (res.deletedCount === 0) return false; // nothing was deleted
+    if (res.deletedCount === 0) return false;
     return true;
   } catch (err) {
+    loggerService.error(`Failed to remove playlist ${playlistId}`, err);
     throw err;
   }
 }

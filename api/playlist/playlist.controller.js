@@ -35,7 +35,7 @@ export async function getPlaylist(req, res) {
 export async function updatePlaylist(req, res) {
   const { playlistId } = req.params;
   if (!req.body || Object.keys(req.body).length === 0) {
-    return res.status(200).send();
+    return res.status(400).send({ error: 'Request body is missing' });
   }
   if (!playlistService.playlistExists(playlistId)) {
     return res.status(404).send({ error: 'Resource does not exist' });
@@ -85,11 +85,10 @@ export async function addPlaylist(req, res) {
 export async function removePlaylist(req, res) {
   const { playlistId } = req.params;
   try {
-    const succeeded = await playlistService.remove(playlistId);
-    if (succeeded) res.status(204).send();
-    else res.status(404).send({ error: 'Resource does not exist' });
+    const deleteSucceeded = await playlistService.remove(playlistId);
+    if (deleteSucceeded) res.status(204).send();
+    else res.status(404).send({ error: 'Resource not found' });
   } catch (err) {
-    loggerService.error(err);
     res.status(500).send({ error: err });
   }
 }
