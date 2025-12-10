@@ -1,4 +1,4 @@
-import { MongoClient } from 'mongodb';
+import { MongoClient, ObjectId } from 'mongodb';
 import { loggerService } from '../services/logger.service.js';
 
 import { config } from '../config/db/index.js';
@@ -41,6 +41,15 @@ async function _connect() {
 
 async function _populateDB() {
   try {
+    // populate users
+    const userCollection = await getCollection(dbCollections.USER);
+    const userCount = await userCollection.countDocuments();
+    if (userCount === 0) {
+      const usersData = await import('../data/users.js');
+      await userCollection.insertMany(usersData.users);
+      loggerService.info('Database populated with initial users data.');
+    }
+
     // populate songs
     const songCollection = await getCollection(dbCollections.SONG);
     const count = await songCollection.countDocuments();
@@ -50,22 +59,137 @@ async function _populateDB() {
       loggerService.info('Database populated with initial songs data.');
     }
 
-    // populate playlists
-    const playlistCollection = await getCollection(dbCollections.PLAYLIST);
-    const playlistCount = await playlistCollection.countDocuments();
-    if (playlistCount === 0) {
-      const playlistsData = await import('../data/playlists.js');
-      await playlistCollection.insertMany(playlistsData.playlists);
-      loggerService.info('Database populated with initial playlists data.');
-    }
+    const users = await userCollection.find().toArray();
+    const songs = await songCollection.find().toArray();
 
-    // populate users
-    const userCollection = await getCollection(dbCollections.USER);
-    const userCount = await userCollection.countDocuments();
-    if (userCount === 0) {
-      const usersData = await import('../data/users.js');
-      await userCollection.insertMany(usersData.users);
-      loggerService.info('Database populated with initial users data.');
+    const playlistCollection = await getCollection(dbCollections.PLAYLIST);
+
+    // Create a "Liked Songs" playlist for each user
+    const likedPlaylistsCount = await playlistCollection.countDocuments({
+      isLikedSongs: true,
+    });
+    if (likedPlaylistsCount === 0 && users.length > 0) {
+      const likedPlaylists = [];
+      const userUpdates = [];
+
+      for (const user of users) {
+        // Create "Liked Songs" playlist
+        const likedPlaylist = {
+          title: 'Liked Songs',
+          description: 'Your collection of liked songs',
+          createdBy: {
+            _id: user._id.toString(), // Convert to string
+            username: user.username,
+            fullName: user.fullName,
+            email: user.email,
+            profileImg:
+              user.imgUrl ||
+              'https://randomuser.me/api/portraits/thumb/men/1.jpg',
+          },
+          createdAt: new Date(),
+          songs: [], // Empty initially
+          thumbnail: 'https://img.youtube.com/vi/default/hqdefault.jpg',
+          isLikedSongs: true, // Special flag to identify liked songs playlists
+        };
+
+        likedPlaylists.push(likedPlaylist);
+      }
+
+      const insertResult = await playlistCollection.insertMany(likedPlaylists);
+      const insertedPlaylists = Object.values(insertResult.insertedIds);
+
+      // Update each user's library.playlists array with their liked playlist ID (as string)
+      for (let i = 0; i < users.length; i++) {
+        const user = users[i];
+        const playlistId = insertedPlaylists[i].toString(); // Convert to string
+
+        await userCollection.updateOne(
+          { _id: user._id },
+          {
+            $set: {
+              'library.playlists': [playlistId],
+            },
+          }
+        );
+      }
+
+      // Generate genre-based playlists
+      if (songs.length > 0 && users.length > 0) {
+        // Extract unique genres
+        const genres = new Set();
+        songs.forEach(song => {
+          if (song.genres && Array.isArray(song.genres)) {
+            song.genres.forEach(genre => genres.add(genre.toLowerCase()));
+          }
+        });
+
+        // Create playlists for each genre
+        const playlists = [];
+        for (const genre of genres) {
+          const genreSongs = songs.filter(
+            song =>
+              song.genres && song.genres.some(g => g.toLowerCase() === genre)
+          );
+          const randomUser = users[Math.floor(Math.random() * users.length)];
+
+          playlists.push({
+            title: `${
+              genre.charAt(0).toUpperCase() + genre.slice(1)
+            } Essentials`,
+            description: `A curated collection of the best ${genre} tracks`,
+            createdBy: {
+              _id: randomUser._id.toString(), // Convert to string
+              username: randomUser.username,
+              fullName: randomUser.fullName,
+              email: randomUser.email,
+              profileImg:
+                randomUser.imgUrl ||
+                'https://randomuser.me/api/portraits/thumb/men/81.jpg',
+            },
+            songs: genreSongs.map(song => ({
+              _id: song._id.toString(), // Convert to string
+              title: song.title,
+              artist: song.artist,
+              duration: song.duration,
+              albumName: song.albumName,
+              thumbnail: song.thumbnail,
+              releasedAt: song.releasedAt,
+              genres: song.genres,
+              url: song.url,
+              addedAt: new Date(),
+            })),
+            thumbnail:
+              genreSongs[0]?.thumbnail ||
+              'https://img.youtube.com/vi/default/hqdefault.jpg',
+          });
+        }
+
+        if (playlists.length > 0) {
+          const insertResult = await playlistCollection.insertMany(playlists);
+          const insertedPlaylistIds = Object.values(insertResult.insertedIds);
+
+          // Update users' libraries with their assigned genre playlists
+          for (let i = 0; i < playlists.length; i++) {
+            const playlist = playlists[i];
+            const playlistId = insertedPlaylistIds[i].toString(); // Convert to string
+            const userId = ObjectId.createFromHexString(playlist.createdBy._id); // Convert back to ObjectId for query
+
+            // Add this playlist ID to the user's library.playlists array
+            await userCollection.updateOne(
+              { _id: userId },
+              { $addToSet: { 'library.playlists': playlistId } }
+            );
+          }
+
+          loggerService.info(
+            `Database populated with ${playlists.length} genre-based playlists and updated user libraries.`
+          );
+        }
+      }
+
+      loggerService.info(
+        `Created ${likedPlaylists.length} "Liked Songs" playlists and updated user libraries.`
+      );
     }
   } catch (err) {
     loggerService.error('Failed to populate DB', err);

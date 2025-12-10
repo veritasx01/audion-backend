@@ -1,9 +1,10 @@
-import { dbService, dbCollections } from '../../services/db.service.js';
+import { ObjectId } from 'mongodb';
+import { AuthErrors } from '../auth/auth.service.js';
 import { utilService } from '../../services/util.service.js';
 import { loggerService } from '../../services/logger.service.js';
-import { AuthErrors } from '../auth/auth.service.js';
+import { playlistService } from '../playlist/playlist.service.js';
+import { dbService, dbCollections } from '../../services/db.service.js';
 import { asyncLocalStorage } from '../../services/als.service.js';
-import { ObjectId } from 'mongodb';
 
 export const userService = {
   add, // Create (Signup)
@@ -13,20 +14,20 @@ export const userService = {
   query, // List (of users)
   getByUsername, // Used for Login
   getByEmail, // Used for validating email is unique during signup and updates
-  getUserPlaylists, // Get playlists for a user
-  getUserPlaylistsByUserId, // Get playlists for a user by his userId
+  getDefaultUser, // Get the default user: temporary until auth is fully implemented
+  mapUserToMiniUser, // return a mini user object with only the essential fields
+  addPlaylistToUserLibrary, // add a playlist to a user's library
+  removePlaylistFromUserLibrary, // remove a playlist from a user's library
 };
+
+export const DEFAULT_USER_USERNAME = 'defaultuser';
 
 async function query(filterBy = {}) {
   const criteria = _buildCriteria(filterBy);
   try {
     const collection = await dbService.getCollection(dbCollections.USER);
     var users = await collection.find(criteria).toArray();
-    users = users.map(user => {
-      delete user.password; // remove password before returning the user object
-      user.createdAt = user._id.getTimestamp(); // enrich user object with createdAt timestamp
-      return user;
-    });
+    users = users.map(user => mapUserToMiniUser(user));
     return users;
   } catch (err) {
     loggerService.error('cannot find users', err);
@@ -40,11 +41,7 @@ async function getById(userId) {
 
     const collection = await dbService.getCollection(dbCollections.USER);
     const user = await collection.findOne(criteria);
-    delete user.password; // remove password before returning the user
-    user.createdAt = user._id.getTimestamp(); // enrich user object with createdAt timestamp
-    user.playlists = await getUserPlaylists(user); // enrich user object with his library playlist objects
-
-    return user;
+    return mapUserToMiniUser(user);
   } catch (err) {
     loggerService.error(`while finding user by id: ${userId}`, err);
     throw err;
@@ -70,7 +67,8 @@ async function getByEmail(email, userIdToExclude = null) {
       criteria._id = { $ne: ObjectId.createFromHexString(userIdToExclude) };
     }
     const user = await collection.findOne(criteria);
-    return user;
+    const miniUser = mapUserToMiniUser(user, false);
+    return miniUser;
   } catch (err) {
     loggerService.error(`Failed querying a user by email: ${email}`, err);
     throw err;
@@ -82,7 +80,10 @@ async function remove(userId) {
     const criteria = { _id: ObjectId.createFromHexString(userId) };
 
     const collection = await dbService.getCollection(dbCollections.USER);
-    await collection.deleteOne(criteria);
+
+    const result = await collection.deleteOne(criteria);
+    if (result.deletedCount === 0) return false;
+    return true;
   } catch (err) {
     loggerService.error(`cannot remove user ${userId}`, err);
     throw err;
@@ -100,7 +101,7 @@ async function update(user) {
 
     const userToSave = utilService.removeEmptyObjectFields({
       _id: ObjectId.createFromHexString(user._id), // needed for the returnd obj
-      fullname: user.fullname,
+      fullName: user.fullName,
       email: user.email.toLowerCase(),
       imgUrl: user.imgUrl,
     });
@@ -116,8 +117,16 @@ async function update(user) {
       }
     }
     const collection = await dbService.getCollection(dbCollections.USER);
-    await collection.updateOne({ _id: userToSave._id }, { $set: userToSave });
-    return userToSave;
+    const updateResult = await collection.updateOne(
+      { _id: userToSave._id },
+      { $set: userToSave }
+    );
+    if (updateResult.acknowledged !== true || updateResult.matchedCount === 0) {
+      throw `Failed to update user ${user._id}`;
+    } else {
+      updatedUser = await getById(user._id);
+      return updatedUser;
+    }
   } catch (err) {
     loggerService.error(`cannot update user ${user._id}`, err);
     throw err;
@@ -129,14 +138,14 @@ async function add(user) {
     const userToAdd = {
       username: user.username.toLowerCase(),
       password: user.password,
-      fullname: user.fullname,
+      fullName: user.fullName,
       email: user.email.toLowerCase(),
-      imgUrl: user.imgUrl,
+      profileImg: user.profileImg,
       // isAdmin: user.isAdmin, // TBD: only admin can create another admin
-      playlists: [], // TBD: create & add default "liked songs" playlist
+      library: { playlists: [] },
     };
     const collection = await dbService.getCollection(dbCollections.USER);
-    await collection.insertOne(userToAdd);
+    const insertedUserId = await collection.insertOne(userToAdd);
     return userToAdd;
   } catch (err) {
     loggerService.error('cannot add user', err);
@@ -144,55 +153,87 @@ async function add(user) {
   }
 }
 
-// fetch playlist objects libary for a given userId
-async function getUserPlaylistsByUserId(userId) {
+// fetch the default user (used temoprarily for actions that require a user context until auth is fully implemented)
+async function getDefaultUser() {
   try {
-    const user = await getById(userId);
-    getUserPlaylists(user);
+    const defaultUser = await getByUsername(DEFAULT_USER_USERNAME);
+    return mapUserToMiniUser(defaultUser);
   } catch (err) {
-    loggerService.error(`Error fetching user playlists: ${err.message}`, err);
+    loggerService.error('Error fetching default user', err);
     throw err;
   }
 }
 
-// fetch playlist objects for a given user based on his libray list of playlist IDs
-async function getUserPlaylists(user) {
+async function addPlaylistToUserLibrary(userId, playlistId) {
   try {
-    // Check if user has playlist IDs
-    if (
-      !user.playlists ||
-      !Array.isArray(user.playlists) ||
-      user.playlists.length === 0
-    ) {
-      return [];
+    const collection = await dbService.getCollection(dbCollections.USER);
+    const updateResult = await collection.updateOne(
+      { _id: ObjectId.createFromHexString(userId) },
+      { $addToSet: { 'library.playlists': playlistId } }
+    );
+    if (updateResult.acknowledged !== true || updateResult.matchedCount === 0) {
+      throw `Failed to add playlist ${playlistId} to user ${userId} library`;
+    } else {
+      return updateResult.acknowledged;
     }
-
-    // Convert playlist IDs to ObjectId format
-    const playlistIds = user.playlists.map(id =>
-      typeof id === 'string' ? ObjectId.createFromHexString(id) : id
-    );
-
-    const playlistCollection = await dbService.getCollection(
-      dbCollections.PLAYLIST
-    );
-    const playlists = await playlistCollection
-      .find({
-        _id: { $in: playlistIds },
-      })
-      .toArray();
-
-    return playlists;
   } catch (err) {
-    loggerService.error(`Error fetching user playlists: ${err.message}`, err);
+    loggerService.error(
+      `Failed to add playlist ${playlistId} to user ${userId} library`,
+      err
+    );
     throw err;
   }
+}
+
+async function removePlaylistFromUserLibrary(userId, playlistId) {
+  try {
+    const collection = await dbService.getCollection(dbCollections.USER);
+    const updateResult = await collection.updateOne(
+      { _id: ObjectId.createFromHexString(userId) },
+      { $pull: { 'library.playlists': playlistId } }
+    );
+    if (updateResult.acknowledged !== true || updateResult.matchedCount === 0) {
+      throw `Failed to remove playlist ${playlistId} from user ${userId} library`;
+    } else {
+      return updateResult.acknowledged;
+    }
+  } catch (err) {
+    loggerService.error(
+      `Failed to remove playlist ${playlistId} from user ${userId} library`,
+      err
+    );
+    throw err;
+  }
+}
+
+function mapUserToMiniUser(user, includeLibraryData = true) {
+  if (!user) return null;
+  const miniUserKeys = [
+    '_id',
+    'username',
+    'fullName',
+    'email',
+    'profileImg',
+    'isAdmin',
+  ];
+
+  if (includeLibraryData) miniUserKeys.push('library');
+
+  const miniUser = Object.fromEntries(
+    Object.entries(user).filter(
+      ([key, value]) => key && miniUserKeys.includes(key)
+    )
+  );
+  miniUser.createdAt = user._id.getTimestamp();
+
+  return miniUser;
 }
 
 function _buildCriteria(filterBy) {
   const criteria = {};
   if (filterBy.name) {
     const nameCriteria = { $regex: filterBy.name, $options: 'i' };
-    criteria.$or = [{ username: nameCriteria }, { fullname: nameCriteria }];
+    criteria.$or = [{ username: nameCriteria }, { fullName: nameCriteria }];
   }
   if (filterBy.email) {
     criteria.email = filterBy.email;

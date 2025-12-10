@@ -12,6 +12,16 @@ export async function getUser(req, res) {
   }
 }
 
+export async function getDefaultUser(req, res) {
+  try {
+    const defaultUser = await userService.getDefaultUser();
+    res.json(defaultUser);
+  } catch (err) {
+    loggerService.error('Failed to get default user', err);
+    res.status(400).send({ err: 'Failed to get default user' });
+  }
+}
+
 export async function getUsers(req, res) {
   try {
     const filterBy = {}; // Add filtering logic if needed based on req.query
@@ -25,7 +35,10 @@ export async function getUsers(req, res) {
 
 export async function deleteUser(req, res) {
   try {
-    await userService.remove(req.params.id);
+    const deleteSucceeded = await userService.remove(req.params.id);
+    if (!deleteSucceeded) {
+      return res.status(404).send({ err: 'User not found' });
+    }
     res.status(204).send({ msg: 'Deleted successfully' });
   } catch (err) {
     loggerService.error('Failed to delete user', err);
@@ -47,5 +60,53 @@ export async function updateUser(req, res) {
     } else {
       res.status(400).send({ err: 'Failed to update user' });
     }
+  }
+}
+
+export async function addPlaylistToUserLibrary(req, res) {
+  const { id: userId, playlistId } = req.params;
+  try {
+    const additionSucceeded = await userService.addPlaylistToUserLibrary(
+      userId,
+      playlistId
+    );
+    if (!additionSucceeded) {
+      loggerService.error(
+        `Failed to add playlist ${playlistId} to user ${userId} library`
+      );
+      return res.status(404).send({ err: 'User or Playlist not found' });
+    }
+    res
+      .status(201)
+      .send({ msg: 'Playlist added to user library successfully' });
+  } catch (err) {
+    loggerService.error('Failed to add playlist to user library', err);
+    res.status(400).send({
+      err: `Failed to add playlist ${playlistId} to user ${userId} library`,
+    });
+  }
+}
+
+export async function removePlaylistFromUserLibrary(req, res) {
+  const { id: userId, playlistId } = req.params;
+  try {
+    const removalSucceeded = await userService.removePlaylistFromUserLibrary(
+      userId,
+      playlistId
+    );
+    if (!removalSucceeded) {
+      loggerService.error(
+        `Failed to remove playlist ${playlistId} from user ${userId} library`
+      );
+      return res.status(404).send({ err: 'User or Playlist not found' });
+    }
+    res
+      .status(200)
+      .send({ msg: 'Playlist removed from user library successfully' });
+  } catch (err) {
+    loggerService.error('Failed to remove playlist from user library', err);
+    res.status(400).send({
+      err: `Failed to remove playlist ${playlistId} from user ${userId} library`,
+    });
   }
 }

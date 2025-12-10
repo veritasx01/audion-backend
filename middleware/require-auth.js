@@ -18,7 +18,7 @@ export function requireAdmin(req, res, next) {
     return res.status(401).send(AuthErrors.USER_IS_NOT_AUTHENTICATED);
   if (!loggedinUser.isAdmin) {
     loggerService.warn(
-      loggedinUser.fullname + ' attempted to perform admin action'
+      loggedinUser.fullName + ' attempted to perform admin action'
     );
     res.status(403).end(AuthErrors.ACCESS_FORBIDDEN);
     return;
