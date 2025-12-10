@@ -177,12 +177,22 @@ async function removeSongFromPlaylist(playlistId, songId) {
 function _buildFilterCriteria(filterBy) {
   const criteria = {};
 
-  // Filter by specific playlist IDs (from user library)
+  // filter for playlists created by a specific user
+  if (filterBy?.userId) {
+    criteria._createdBy = filterBy.userId;
+  }
+
+  // filter for liked songs playlist
+  if (filterBy?.isLikedSongs !== undefined) {
+    criteria.isLikedSongs = filterBy.isLikedSongs;
+  }
+
   if (
-    filterBy.playlistIds &&
+    filterBy?.playlistIds &&
     Array.isArray(filterBy.playlistIds) &&
     filterBy.playlistIds.length > 0
   ) {
+    // Filter by specific playlist IDs (from user library)
     const playlistObjectIds = filterBy.playlistIds.map(id =>
       typeof id === 'string' ? ObjectId.createFromHexString(id) : id
     );
@@ -190,7 +200,7 @@ function _buildFilterCriteria(filterBy) {
   }
 
   // Free text search across songs in playlists
-  if (filterBy.searchString) {
+  if (filterBy?.searchString) {
     const searchRegex = { $regex: filterBy.searchString, $options: 'i' };
     criteria.$or = [
       { title: searchRegex }, // Search in playlist title
@@ -202,7 +212,7 @@ function _buildFilterCriteria(filterBy) {
   }
 
   // Filter by genre - playlist must have at least one song with the genre
-  if (filterBy.genre) {
+  if (filterBy?.genre) {
     criteria['songs.genres'] = { $in: [filterBy.genre.toLowerCase()] };
   }
 
