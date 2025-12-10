@@ -30,7 +30,7 @@ function generateToken(user) {
   const payload = {
     _id: user._id,
     username: user.username,
-    fullname: user.fullname,
+    fullName: user.fullName,
     isAdmin: user.isAdmin,
   };
 
@@ -60,13 +60,9 @@ async function login(username, password) {
   const match = await bcrypt.compare(password, user.password);
   if (!match) throw AuthErrors.INVALID_CREDENTIALS;
 
-  const miniUser = {
-    _id: user._id,
-    username: user.username,
-    fullname: user.fullname,
-    isAdmin: user.isAdmin,
-    imgUrl: user.imgUrl,
-    // playlist: user.playlists TBD for library feature
+  const miniUser = userService.mapUserToMiniUser(user);
+  miniUser.library = {
+    playlists: await userService.getUserPlaylists(user._id),
   };
 
   return miniUser;
@@ -75,7 +71,7 @@ async function login(username, password) {
 async function signup({
   username,
   password,
-  fullname,
+  fullName,
   email,
   imgUrl,
   isAdmin,
@@ -83,9 +79,9 @@ async function signup({
   const saltRounds = 10;
 
   loggerService.debug(
-    `auth.service - signup with username: ${username}, fullname: ${fullname}`
+    `auth.service - signup with username: ${username}, fullName: ${fullName}`
   );
-  if (!username || !password || !fullname) throw AuthErrors.MISSING_SIGNUP_INFO;
+  if (!username || !password || !fullName) throw AuthErrors.MISSING_SIGNUP_INFO;
 
   const userExists = await userService.getByUsername(username);
   if (userExists) throw AuthErrors.USERNAME_IN_USE;
@@ -97,7 +93,7 @@ async function signup({
   return userService.add({
     username,
     password: hashedPassword,
-    fullname,
+    fullName,
     email,
     imgUrl,
     isAdmin,

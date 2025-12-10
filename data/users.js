@@ -1,6 +1,8 @@
+import { DEFAULT_USER_USERNAME } from '../api/user/user.service';
+
 export const users = [
   {
-    username: 'defaultuser',
+    username: DEFAULT_USER_USERNAME,
     fullName: 'John Doe',
     email: 'johndoe@example.com',
     profileImg: 'https://randomuser.me/api/portraits/thumb/men/1.jpg',

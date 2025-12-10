@@ -80,7 +80,7 @@ async function _populateDB() {
           createdBy: {
             _id: user._id,
             username: user.username,
-            fullName: user.fullname,
+            fullName: user.fullName,
             email: user.email,
             profileImg:
               user.imgUrl ||
@@ -140,7 +140,7 @@ async function _populateDB() {
             createdBy: {
               _id: randomUser._id,
               username: randomUser.username,
-              fullName: randomUser.fullname,
+              fullName: randomUser.fullName,
               email: randomUser.email,
               profileImg:
                 randomUser.imgUrl ||

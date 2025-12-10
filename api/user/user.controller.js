@@ -12,6 +12,16 @@ export async function getUser(req, res) {
   }
 }
 
+export async function getDefaultUser(req, res) {
+  try {
+    const defaultUser = await userService.getDefaultUser();
+    res.json(defaultUser);
+  } catch (err) {
+    loggerService.error('Failed to get default user', err);
+    res.status(400).send({ err: 'Failed to get default user' });
+  }
+}
+
 export async function getUsers(req, res) {
   try {
     const filterBy = {}; // Add filtering logic if needed based on req.query
@@ -25,7 +35,10 @@ export async function getUsers(req, res) {
 
 export async function deleteUser(req, res) {
   try {
-    await userService.remove(req.params.id);
+    const deleteSucceeded = await userService.remove(req.params.id);
+    if (!deleteSucceeded) {
+      return res.status(404).send({ err: 'User not found' });
+    }
     res.status(204).send({ msg: 'Deleted successfully' });
   } catch (err) {
     loggerService.error('Failed to delete user', err);

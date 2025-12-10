@@ -68,6 +68,14 @@ export async function updatePlaylist(req, res) {
 export async function addPlaylist(req, res) {
   const { loggedinUser, body: playlistData } = req;
   try {
+    const createdBy = loggedinUser || (await userService.getDefaultUser());
+    const createdByMini = {
+      _id: createdBy._id,
+      username: createdBy.username,
+      fullName: createdBy.fullName,
+      email: createdBy.email,
+      profileImg: createdBy.profileImg,
+    };
     const playlist = {
       title: playlistData.title,
       description: playlistData.description,
