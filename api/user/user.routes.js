@@ -14,8 +14,8 @@ const router = express.Router();
 
 // Routes for /api/user
 router.get('/', getUsers);
-router.get('/:id', getUser);
 router.get('/defaultUser', getDefaultUser); // temporary route for default user until auth is implemented end-to-end
+router.get('/:id', getUser);
 router.post('/:id/playlist/:playlistId', addPlaylistToUserLibrary);
 router.patch('/:id', requireAuth, updateUser);
 router.delete('/:id', requireAdmin, deleteUser);
