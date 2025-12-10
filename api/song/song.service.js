@@ -22,7 +22,6 @@ async function query(filterBy = {}, sortBy, sortDir) {
 
     const songs = await songCursor.toArray();
 
-    // Get UTC timestamp from song ID and Convert it to Israel timezone
     songs.forEach(song => {
       song.createdAt = song._id.getTimestamp();
     });
@@ -36,7 +35,12 @@ async function query(filterBy = {}, sortBy, sortDir) {
 
 async function getById(songId) {
   try {
-    const criteria = { _id: ObjectId.createFromHexString(songId) };
+    const criteria = {
+      _id:
+        typeof songId === 'string'
+          ? ObjectId.createFromHexString(songId)
+          : songId,
+    };
     const collection = await dbService.getCollection(dbCollections.SONG);
     const song = await collection.findOne(criteria);
     if (!song) return null;
@@ -62,11 +66,13 @@ async function songExists(songId) {
 async function remove(songId) {
   try {
     const criteria = {
-      _id: ObjectId.createFromHexString(songId),
+      _id:
+        typeof songId === 'string'
+          ? ObjectId.createFromHexString(songId)
+          : songId,
     };
     const collection = await dbService.getCollection(dbCollections.SONG);
     const res = await collection.deleteOne(criteria);
-    console.log('res count:', res.deletedCount);
     if (res.deletedCount === 0) return false;
     return true;
   } catch (err) {
@@ -78,10 +84,11 @@ async function remove(songId) {
 async function add(song) {
   try {
     const collection = await dbService.getCollection(dbCollections.SONG);
-    await collection.insertOne(song);
-    return song;
+    const insertedSong = await collection.insertOne(song);
+    insertedSong.createdAt = insertedSong._id.getTimestamp();
+    return insertedSong;
   } catch (err) {
-    loggerService.error('Failed to add song', err);
+    loggerService.error(`Failed to add song ${song}`, err);
     throw err;
   }
 }
@@ -96,6 +103,7 @@ async function update(song) {
 
     await collection.updateOne(criteria, { $set: songToSave });
     const updatedSong = await getById(song._id);
+    updatedSong.createdAt = updatedSong._id.getTimestamp();
     return updatedSong;
   } catch (err) {
     loggerService.error('Failed to update song', err);

@@ -14,7 +14,8 @@ export async function getSongs(req, res) {
     const songs = await songService.query(filterBy, sortBy, sortDir);
     res.json(songs);
   } catch (err) {
-    res.status(500).send({ error: err });
+    loggerService.error('Failed to get songs', err);
+    res.status(400).send({ error: err });
   }
 }
 
@@ -24,17 +25,17 @@ export async function getSong(req, res) {
     const song = await songService.getById(songId);
     if (!song) {
       res.status(404).send({ error: 'Resource not found' });
-    } else res.status(200).send(song);
+    } else res.json(song);
   } catch (err) {
     loggerService.error(`Failed to get song ${songId}`, err);
-    res.status(404).send({ error: err });
+    res.status(400).send({ error: err });
   }
 }
 
 export async function updateSong(req, res) {
   const { songId } = req.params;
   if (!req.body || Object.keys(req.body).length === 0) {
-    return res.status(400).send();
+    return res.status(400).send({ error: 'Request body is missing' });
   }
   if (!songService.songExists(songId)) {
     return res.status(404).send();
@@ -91,9 +92,9 @@ export async function addSong(req, res) {
 export async function removeSong(req, res) {
   const { songId } = req.params;
   try {
-    const succeeded = await songService.remove(songId);
-    if (succeeded) res.status(204).send();
-    else res.status(404).send({ error: 'Resource does not exist' });
+    const deleteSucceeded = await songService.remove(songId);
+    if (deleteSucceeded) res.status(204).send();
+    else res.status(404).send({ error: 'Resource not found' });
   } catch (err) {
     res.status(500).send({ error: err });
   }
