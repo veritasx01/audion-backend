@@ -53,8 +53,7 @@ async function getByUsername(username) {
   try {
     const collection = await dbService.getCollection(dbCollections.USER);
     const user = await collection.findOne({ username: username.toLowerCase() });
-    const miniUser = await mapUserToMiniUser(user);
-    return miniUser;
+    return user;
   } catch (err) {
     loggerService.error(`while finding user by username: ${username}`, err);
     throw err;
@@ -119,8 +118,16 @@ async function update(user) {
       }
     }
     const collection = await dbService.getCollection(dbCollections.USER);
-    await collection.updateOne({ _id: userToSave._id }, { $set: userToSave });
-    return userToSave;
+    const updateResult = await collection.updateOne(
+      { _id: userToSave._id },
+      { $set: userToSave }
+    );
+    if (updateResult.acknowledged !== true || updateResult.matchedCount === 0) {
+      throw `Failed to update user ${user._id}`;
+    } else {
+      updatedUser = await getById(user._id);
+      return updatedUser;
+    }
   } catch (err) {
     loggerService.error(`cannot update user ${user._id}`, err);
     throw err;
@@ -134,12 +141,12 @@ async function add(user) {
       password: user.password,
       fullName: user.fullName,
       email: user.email.toLowerCase(),
-      imgUrl: user.imgUrl,
+      profileImg: user.profileImg,
       // isAdmin: user.isAdmin, // TBD: only admin can create another admin
       library: { playlists: [] },
     };
     const collection = await dbService.getCollection(dbCollections.USER);
-    await collection.insertOne(userToAdd);
+    const insertedUserId = await collection.insertOne(userToAdd);
     return userToAdd;
   } catch (err) {
     loggerService.error('cannot add user', err);
@@ -193,7 +200,50 @@ async function getDefaultUser() {
   }
 }
 
+async function addPlaylistToUserLibrary(userId, playlistId) {
+  try {
+    const collection = await dbService.getCollection(dbCollections.USER);
+    updateResult = await collection.updateOne(
+      { _id: ObjectId.createFromHexString(userId) },
+      { $addToSet: { 'library.playlists': playlistId } }
+    );
+    if (updateResult.acknowledged !== true || updateResult.matchedCount === 0) {
+      throw `Failed to add playlist ${playlistId} to user ${userId} library`;
+    } else {
+      return await getById(userId);
+    }
+  } catch (err) {
+    loggerService.error(
+      `Failed to add playlist ${playlistId} to user ${userId} library`,
+      err
+    );
+    throw err;
+  }
+}
+
+async function removePlaylistFromUserLibrary(userId, playlistId) {
+  try {
+    const collection = await dbService.getCollection(dbCollections.USER);
+    updateResult = await collection.updateOne(
+      { _id: ObjectId.createFromHexString(userId) },
+      { $pull: { 'library.playlists': playlistId } }
+    );
+    if (updateResult.acknowledged !== true || updateResult.matchedCount === 0) {
+      throw `Failed to remove playlist ${playlistId} from user ${userId} library`;
+    } else {
+      return await getById(userId);
+    }
+  } catch (err) {
+    loggerService.error(
+      `Failed to remove playlist ${playlistId} from user ${userId} library`,
+      err
+    );
+    throw err;
+  }
+}
+
 function mapUserToMiniUser(user) {
+  if (!user) return null;
   const miniUserKeys = [
     '_id',
     'username',

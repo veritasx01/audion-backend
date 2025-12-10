@@ -9,7 +9,6 @@ export const songService = { query, getById, songExists, remove, add, update };
 const PAGE_SIZE = 50;
 
 async function query(filterBy = {}, sortBy, sortDir) {
-  console.log('✸ → filterBy:', filterBy);
   try {
     const criteria = _buildFilterCriteria(filterBy);
     const sortObject = utilService.buildSortObject(sortBy, sortDir);

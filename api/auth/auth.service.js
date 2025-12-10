@@ -60,12 +60,16 @@ async function login(username, password) {
   const match = await bcrypt.compare(password, user.password);
   if (!match) throw AuthErrors.INVALID_CREDENTIALS;
 
+  delete user.password;
+  user._id = user._id.toString();
+  /* 
   const miniUser = userService.mapUserToMiniUser(user);
   miniUser.library = {
     playlists: await userService.getUserPlaylists(user._id),
   };
+  */
 
-  return miniUser;
+  return user;
 }
 
 async function signup({
@@ -73,7 +77,7 @@ async function signup({
   password,
   fullName,
   email,
-  imgUrl,
+  profileImg,
   isAdmin,
 }) {
   const saltRounds = 10;
@@ -95,7 +99,7 @@ async function signup({
     password: hashedPassword,
     fullName,
     email,
-    imgUrl,
+    profileImg,
     isAdmin,
   });
 }
