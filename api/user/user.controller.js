@@ -62,3 +62,51 @@ export async function updateUser(req, res) {
     }
   }
 }
+
+export async function addPlaylistToUserLibrary(req, res) {
+  const { id: userId, playlistId } = req.params;
+  try {
+    const additionSucceeded = await userService.addPlaylistToUserLibrary(
+      userId,
+      playlistId
+    );
+    if (!additionSucceeded) {
+      loggerService.error(
+        `Failed to add playlist ${playlistId} to user ${userId} library`
+      );
+      return res.status(404).send({ err: 'User or Playlist not found' });
+    }
+    res
+      .status(201)
+      .send({ msg: 'Playlist added to user library successfully' });
+  } catch (err) {
+    loggerService.error('Failed to add playlist to user library', err);
+    res.status(400).send({
+      err: `Failed to add playlist ${playlistId} to user ${userId} library`,
+    });
+  }
+}
+
+export async function removePlaylistFromUserLibrary(req, res) {
+  const { id: userId, playlistId } = req.params;
+  try {
+    const removalSucceeded = await userService.removePlaylistFromUserLibrary(
+      userId,
+      playlistId
+    );
+    if (!removalSucceeded) {
+      loggerService.error(
+        `Failed to remove playlist ${playlistId} from user ${userId} library`
+      );
+      return res.status(404).send({ err: 'User or Playlist not found' });
+    }
+    res
+      .status(200)
+      .send({ msg: 'Playlist removed from user library successfully' });
+  } catch (err) {
+    loggerService.error('Failed to remove playlist from user library', err);
+    res.status(400).send({
+      err: `Failed to remove playlist ${playlistId} from user ${userId} library`,
+    });
+  }
+}
