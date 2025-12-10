@@ -10,6 +10,8 @@ export const playlistService = {
   remove,
   add,
   update,
+  addSongToPlaylist,
+  removeSongFromPlaylist,
 };
 
 const PAGE_SIZE = 50;
@@ -122,6 +124,52 @@ async function update(playlist) {
     return modifiedPlaylist;
   } catch (err) {
     loggerService.error('Failed to update playlist', err);
+    throw err;
+  }
+}
+
+async function addSongToPlaylist(playlistId, song) {
+  try {
+    const collection = await dbService.getCollection(dbCollections.PLAYLIST);
+    const updateResult = await collection.updateOne(
+      { _id: ObjectId.createFromHexString(playlistId) },
+      { $push: { songs: song } }
+    );
+    if (
+      updateResult.acknowledged !== true ||
+      updateResult.modifiedCount === 0
+    ) {
+      throw `Failed to add song ${song?._id} to playlist ${playlistId}`;
+    }
+    return updateResult.acknowledged;
+  } catch (err) {
+    loggerService.error(
+      `Failed to add song ${song?._id} to playlist ${playlistId}`,
+      err
+    );
+    throw err;
+  }
+}
+
+async function removeSongFromPlaylist(playlistId, songId) {
+  try {
+    const collection = await dbService.getCollection(dbCollections.PLAYLIST);
+    const updateResult = await collection.updateOne(
+      { _id: ObjectId.createFromHexString(playlistId) },
+      { $pull: { songs: { _id: songId } } }
+    );
+    if (
+      updateResult.acknowledged !== true ||
+      updateResult.modifiedCount === 0
+    ) {
+      throw `Failed to remove song ${songId} from playlist ${playlistId}`;
+    }
+    return updateResult.acknowledged;
+  } catch (err) {
+    loggerService.error(
+      `Failed to remove song ${songId} from playlist ${playlistId}`,
+      err
+    );
     throw err;
   }
 }

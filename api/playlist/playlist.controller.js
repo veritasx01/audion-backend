@@ -95,3 +95,59 @@ export async function removePlaylist(req, res) {
     res.status(500).send({ error: err });
   }
 }
+
+export async function addSongToPlaylist(req, res) {
+  const { playlistId } = req.params;
+  const song = req.body;
+
+  const songToAdd = {
+    _id: song._id,
+    title: song.title,
+    artist: song.artist,
+    albumName: song.albumName,
+    duration: song.duration,
+    url: song.url,
+    genres: song.genres,
+    thumbnail: song.thumbnail,
+    addedAt: new Date(),
+  };
+
+  try {
+    const updateResult = await playlistService.addSongToPlaylist(
+      playlistId,
+      songToAdd
+    );
+    if (updateResult) {
+      res.status(201).send({ msg: 'Song added to playlist successfully' });
+    } else {
+      loggerService.error(
+        `Failed to add song ${song?._id} to playlist ${playlistId}`
+      );
+      res.status(404).send({ error: 'Resource not found' });
+    }
+  } catch (err) {
+    loggerService.error(err);
+    res.status(500).send({ error: err });
+  }
+}
+
+export async function removeSongFromPlaylist(req, res) {
+  const { playlistId, songId } = req.params;
+  try {
+    const updateResult = await playlistService.removeSongFromPlaylist(
+      playlistId,
+      songId
+    );
+    if (updateResult) {
+      res.status(204).send({ msg: 'Song removed from playlist successfully' });
+    } else {
+      loggerService.error(
+        `Failed to remove song ${songId} from playlist ${playlistId}`
+      );
+      res.status(404).send({ error: 'Resource not found' });
+    }
+  } catch (err) {
+    loggerService.error(err);
+    res.status(500).send({ error: err });
+  }
+}
