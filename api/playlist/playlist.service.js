@@ -90,10 +90,12 @@ async function remove(playlistId) {
 
 async function add(playlist) {
   try {
-    const collection = await dbService.getCollection('playlist');
-    await collection.insertOne(playlist);
-    return playlist;
+    const collection = await dbService.getCollection(dbCollections.PLAYLIST);
+    const insertedPlaylist = await collection.insertOne(playlist);
+    insertedPlaylist.createdAt = insertedPlaylist._id.getTimestamp();
+    return insertedPlaylist;
   } catch (err) {
+    loggerService.error(`Failed to add playlist ${playlist}`, err);
     throw err;
   }
 }
@@ -101,15 +103,23 @@ async function add(playlist) {
 async function update(playlist) {
   const playlistToSave = { ...playlist };
   delete playlistToSave._id;
-  if (!playlist._id) throw 'playlist id missing';
+  if (!playlist._id) throw 'Playlist ID missing';
   try {
     const criteria = { _id: ObjectId.createFromHexString(playlist._id) };
-    const collection = await dbService.getCollection('playlist');
+    const collection = await dbService.getCollection(dbCollections.PLAYLIST);
 
-    await collection.updateOne(criteria, { $set: playlistToSave });
-    const saved = await getById(playlist._id);
+    const updateResult = await collection.updateOne(criteria, {
+      $set: playlistToSave,
+    });
 
-    return saved;
+    if (updateResult.acknowledged !== true || updateResult.matchedCount === 0) {
+      throw `Failed to update playlist ${playlist._id}`;
+    }
+
+    const modifiedPlaylist = await getById(playlist._id);
+    modifiedPlaylist.createdAt = modifiedPlaylist._id.getTimestamp();
+
+    return modifiedPlaylist;
   } catch (err) {
     loggerService.error('Failed to update playlist', err);
     throw err;

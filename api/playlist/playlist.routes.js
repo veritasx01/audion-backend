@@ -9,16 +9,11 @@ import {
 
 const router = express.Router();
 
+// Routes for /api/playlist
 router.get('/', getPlaylists);
 router.get('/:playlistId', getPlaylist);
 router.delete('/:playlistId', removePlaylist);
-router.put('/:playlistId', updatePlaylist);
+router.patch('/:playlistId', updatePlaylist);
 router.post('/', addPlaylist);
-/*
-router.get('/',);
-router.get('/:playlistId',);
-router.delete('/:playlistId',);
-router.put('/', );
-router.post('/', );
-*/
+
 export const playlistRoutes = router;

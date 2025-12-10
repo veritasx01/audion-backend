@@ -1,5 +1,6 @@
-import { loggerService } from '../../services/logger.service.js';
+import { userService } from '../user/user.service.js';
 import { playlistService } from './playlist.service.js';
+import { loggerService } from '../../services/logger.service.js';
 
 export async function getPlaylists(req, res) {
   try {
@@ -34,6 +35,7 @@ export async function getPlaylist(req, res) {
 
 export async function updatePlaylist(req, res) {
   const { playlistId } = req.params;
+  const { loggedinUser, body: playlistData } = req;
   if (!req.body || Object.keys(req.body).length === 0) {
     return res.status(400).send({ error: 'Request body is missing' });
   }
@@ -42,12 +44,10 @@ export async function updatePlaylist(req, res) {
   }
   let playlist = {
     _id: playlistId,
-    name: req.body.name,
-    description: req.body.description,
-    thumbnail: req.body.thumbnail,
-    createdAt: req.body.createdAt,
-    createdBy: req.body.createdBy,
-    songs: req.body.songs,
+    title: playlistData.title,
+    description: playlistData.description,
+    thumbnail: playlistData.thumbnail,
+    songs: playlistData.songs,
   };
   // only update fields which have content
   playlist = Object.fromEntries(
@@ -56,8 +56,9 @@ export async function updatePlaylist(req, res) {
     )
   );
   try {
-    await playlistService.update(playlist);
-    res.status(200).send(playlist);
+    const updatedPlaylist = await playlistService.update(playlist);
+    updatedPlaylist.createdAt = updatedPlaylist._id.getTimestamp();
+    res.json(updatedPlaylist);
   } catch (err) {
     loggerService.error(err);
     res.status(500).send({ error: err });
@@ -65,20 +66,20 @@ export async function updatePlaylist(req, res) {
 }
 
 export async function addPlaylist(req, res) {
-  const playlist = {
-    name: req.body.name,
-    description: req.body.description,
-    thumbnail: req.body.thumbnail,
-    createdAt: req.body.createdAt,
-    createdBy: req.body.createdBy,
-    songs: req.body.songs,
-  };
+  const { loggedinUser, body: playlistData } = req;
   try {
+    const playlist = {
+      title: playlistData.title,
+      description: playlistData.description,
+      thumbnail: playlistData.thumbnail,
+      createdBy: loggedinUser || (await userService.getDefaultUser()),
+      songs: playlistData.songs || [],
+    };
     await playlistService.add(playlist);
-    res.status(200).send(playlist);
+    res.json(playlist);
   } catch (err) {
     loggerService.error(err);
-    res.status(500).send({ error: err });
+    res.status(400).send({ error: err });
   }
 }
 
