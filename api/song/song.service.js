@@ -2,6 +2,7 @@ import { ObjectId } from 'mongodb';
 import { dbService, dbCollections } from '../../services/db.service.js';
 import { loggerService } from '../../services/logger.service.js';
 import { utilService } from '../../services/util.service.js';
+import { asyncLocalStorage } from '../../services/als.service.js';
 
 export const songService = { query, getById, songExists, remove, add, update };
 
@@ -39,21 +40,23 @@ async function getById(songId) {
     const criteria = { _id: ObjectId.createFromHexString(songId) };
     const collection = await dbService.getCollection(dbCollections.SONG);
     const song = await collection.findOne(criteria);
+    if (!song) return null;
     song.createdAt = song._id.getTimestamp();
     return song;
   } catch (err) {
-    loggerService.error('Failed to get song by id', err);
+    loggerService.error('Failed to Get Song by ID', err);
     throw err;
   }
 }
 
 async function songExists(songId) {
   try {
-    const song = getById(songId);
+    const song = await getById(songId);
     if (!song) return false;
     return true;
   } catch (err) {
-    return false;
+    loggerService.error(`Failed to check if song ${songId} exists`, err);
+    throw err;
   }
 }
 
@@ -64,10 +67,11 @@ async function remove(songId) {
     };
     const collection = await dbService.getCollection(dbCollections.SONG);
     const res = await collection.deleteOne(criteria);
-    if (res.deletedCount === 0) return false; // nothing was deleted
+    console.log('res count:', res.deletedCount);
+    if (res.deletedCount === 0) return false;
     return true;
   } catch (err) {
-    loggerService.error('Failed to remove song', err);
+    loggerService.error(`Failed to remove song ${songId}`, err);
     throw err;
   }
 }

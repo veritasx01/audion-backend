@@ -1,3 +1,4 @@
+import { loggerService } from '../../services/logger.service.js';
 import { songService } from './song.service.js';
 
 export async function getSongs(req, res) {
@@ -22,10 +23,11 @@ export async function getSong(req, res) {
   try {
     const song = await songService.getById(songId);
     if (!song) {
-      res.status(404).send({ error: 'Resource does not exist' });
+      res.status(404).send({ error: 'Resource not found' });
     } else res.status(200).send(song);
   } catch (err) {
-    res.status(500).send({ error: err });
+    loggerService.error(`Failed to get song ${songId}`, err);
+    res.status(404).send({ error: err });
   }
 }
 

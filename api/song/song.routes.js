@@ -1,5 +1,5 @@
 import express from 'express';
-import { songService } from './song.service.js';
+import { requireAuth, requireAdmin } from '../../middleware/require-auth.js';
 import {
   getSongs,
   getSong,
@@ -12,8 +12,8 @@ const router = express.Router();
 
 router.get('/', getSongs); // needs querying
 router.get('/:songId', getSong);
-router.patch('/:songId', updateSong);
-router.post('/', addSong);
-router.delete('/:songId', removeSong); // make for admin only in the future
+router.patch('/:songId', requireAuth, updateSong);
+router.post('/', requireAuth, addSong);
+router.delete('/:songId', requireAdmin, removeSong); // make for admin only in the future
 
 export const songRoutes = router;
