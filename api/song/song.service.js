@@ -115,11 +115,17 @@ async function update(song) {
 }
 
 function _buildFilterCriteria(filterBy) {
+  if (!filterBy) return {};
   const criteria = {};
 
   // Add artist filter if specified (this will be ANDed with other criteria)
   if (filterBy.artist) {
     criteria.artist = { $regex: filterBy.artist, $options: 'i' };
+  }
+
+  // Add genre filter - song must have the genre in its genres array
+  if (filterBy.genre) {
+    criteria.genres = { $in: [filterBy.genre.toLowerCase()] };
   }
 
   // Add free text search functionality
