@@ -83,7 +83,7 @@ async function _populateDB() {
             fullName: user.fullName,
             email: user.email,
             profileImg:
-              user.imgUrl ||
+              user.profileImg ||
               'https://randomuser.me/api/portraits/thumb/men/1.jpg',
           },
           createdAt: new Date(),
@@ -144,7 +144,7 @@ async function _populateDB() {
               fullName: randomUser.fullName,
               email: randomUser.email,
               profileImg:
-                randomUser.imgUrl ||
+                randomUser.profileImg ||
                 'https://randomuser.me/api/portraits/thumb/men/81.jpg',
             },
             songs: genreSongs.map(song => ({

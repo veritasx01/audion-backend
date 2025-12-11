@@ -103,7 +103,7 @@ async function update(user) {
       _id: ObjectId.createFromHexString(user._id), // needed for the returnd obj
       fullName: user.fullName,
       email: user.email.toLowerCase(),
-      imgUrl: user.imgUrl,
+      profileImg: user.profileImg,
     });
 
     // Check if email is already taken by another user
