@@ -83,8 +83,12 @@ async function remove(songId) {
 async function add(song) {
   try {
     const collection = await dbService.getCollection(dbCollections.SONG);
-    const insertedSong = await collection.insertOne(song);
-    insertedSong.createdAt = insertedSong._id.getTimestamp();
+    const result = await collection.insertOne(song);
+    const insertedSong = {
+      ...song,
+      _id: result.insertedId,
+      createdAt: result.insertedId.getTimestamp(),
+    };
     return insertedSong;
   } catch (err) {
     loggerService.error(`Failed to add song ${song}`, err);
