@@ -23,8 +23,9 @@ export const httpService = {
 async function ajax(endpoint, method = 'GET', data = null, headers = {}) {
   const url = endpoint;
   const params = method === 'GET' ? data : null;
+  const requestData = method === 'GET' ? null : data;
 
-  const options = { url, method, data, params, headers };
+  const options = { url, method, data: requestData, params, headers };
   try {
     const res = await axios(options);
     return res.data;
