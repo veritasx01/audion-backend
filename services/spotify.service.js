@@ -132,7 +132,24 @@ export async function searchTracks(query) {
     offset: 0,
   };
 
-  const data = await spotifyFetch('search', queryParams);
+  const tracksData = await spotifyFetch('search', queryParams);
 
-  return data.tracks.items;
+  // map spotify data to song data structure
+  const songs = tracksData.tracks.items.map(item => ({
+    _id: item.id,
+    title: item.name,
+    artist: item.artists[0]?.name || 'Unknown Artist',
+    albumName: item.album.name,
+    duration: item.duration_ms / 1000, // convert ms to seconds
+    genres: [], // Spotify API does not provide genres at track level
+    releasedAt: new Date(item.album.release_date),
+    thumbnail:
+      item.album.images && item.album.images.length > 0
+        ? item.album.images[item.album.images.length - 1].url // smallest image
+        : null,
+    previewUrl: item.preview_url,
+    spotifyUrl: item.external_urls.spotify,
+  }));
+
+  return songs;
 }
