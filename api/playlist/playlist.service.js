@@ -93,11 +93,18 @@ async function remove(playlistId) {
 async function add(playlist) {
   try {
     const collection = await dbService.getCollection(dbCollections.PLAYLIST);
-    const insertedPlaylist = await collection.insertOne(playlist);
-    insertedPlaylist.createdAt = insertedPlaylist._id.getTimestamp();
+    const result = await collection.insertOne(playlist);
+
+    // Return the playlist with the generated _id and createdAt
+    const insertedPlaylist = {
+      ...playlist,
+      _id: result.insertedId,
+      createdAt: result.insertedId.getTimestamp(),
+    };
+
     return insertedPlaylist;
   } catch (err) {
-    loggerService.error(`Failed to add playlist ${playlist}`, err);
+    loggerService.error(`Failed to add playlist`, err);
     throw err;
   }
 }
