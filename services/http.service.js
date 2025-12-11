@@ -6,29 +6,28 @@ const BASE_URL =
 const axios = Axios.create({ withCredentials: true });
 
 export const httpService = {
-  get(endpoint, data) {
-    return ajax(endpoint, 'GET', data);
+  get(endpoint, data, headers) {
+    return ajax(endpoint, 'GET', data, headers);
   },
-  post(endpoint, data) {
-    return ajax(endpoint, 'POST', data);
+  post(endpoint, data, headers) {
+    return ajax(endpoint, 'POST', data, headers);
   },
-  put(endpoint, data) {
-    return ajax(endpoint, 'PUT', data);
+  put(endpoint, data, headers) {
+    return ajax(endpoint, 'PUT', data, headers);
   },
-  delete(endpoint, data) {
-    return ajax(endpoint, 'DELETE', data);
+  delete(endpoint, data, headers) {
+    return ajax(endpoint, 'DELETE', data, headers);
   },
-  patch(endpoint, data) {
-    return ajax(endpoint, 'PATCH', data);
+  patch(endpoint, data, headers) {
+    return ajax(endpoint, 'PATCH', data, headers);
   },
 };
 
-async function ajax(endpoint, method = 'GET', data = null) {
+async function ajax(endpoint, method = 'GET', data = null, headers = {}) {
   const url = `${BASE_URL}${endpoint}`;
   const params = method === 'GET' ? data : null;
 
-  const options = { url, method, data, params };
-
+  const options = { url, method, data, params, headers };
   try {
     const res = await axios(options);
     return res.data;
