@@ -128,28 +128,67 @@ export async function searchTracks(query) {
   const queryParams = {
     q: query.trim(),
     type: 'track',
-    limit: 20,
+    limit: 50,
     offset: 0,
   };
 
   const tracksData = await spotifyFetch('search', queryParams);
 
-  // map spotify data to song data structure
-  const songs = tracksData.tracks.items.map(item => ({
-    _id: item.id,
-    title: item.name,
-    artist: item.artists[0]?.name || 'Unknown Artist',
-    albumName: item.album.name,
-    duration: Math.ceil(item.duration_ms / 1000), // convert ms to seconds
+  // Normalize spotify data to Audio song data structure
+  const NormalizedSongs = tracksData.tracks.items.map(track => ({
+    _id: track.id,
+    title: track.name,
+    artist: track.artists[0]?.name || '',
+    albumName: track.album.name,
+    albumType: track.album.album_type,
+    duration: Math.ceil(track.duration_ms / 1000), // convert ms to seconds
     genres: [], // Spotify API does not provide genres at track level
-    releasedAt: new Date(item.album.release_date),
-    thumbnail:
-      item.album.images && item.album.images.length > 0
-        ? item.album.images[item.album.images.length - 1].url // smallest image
-        : null,
-    previewUrl: item.preview_url,
-    spotifyUrl: item.external_urls.spotify,
+    releasedAt: new Date(track.album.release_date),
+    thumbnail: track.album?.images[0]?.url || null,
   }));
 
-  return songs;
+  loggerService.debug(
+    `Normalized ${NormalizedSongs.length} Spotify tracks for query "${query}"`
+  );
+
+  const relevantSongs = _excludeIrrelevantTracks(NormalizedSongs, query);
+  const irrelaventSongs = NormalizedSongs.filter(
+    song => !relevantSongs.includes(song)
+  );
+  loggerService.debug(
+    `Excluded ${irrelaventSongs.length} irrelevant tracks for query "${query}". Excluded tracks:`,
+    irrelaventSongs
+  );
+  loggerService.debug('relevantSongs:', relevantSongs);
+
+  return relevantSongs;
+}
+
+function _excludeIrrelevantTracks(tracks, queryString) {
+  const queryRegex = new RegExp(
+    queryString.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+    'i'
+  );
+  const titleExclusionRegex =
+    /\b(remix|edit|version|karaoke|instrumental|cover)\b|\s-\s*live\b/i;
+  const albumExclusionRegex =
+    /\b(greatest hits|best of|mix|remix|collection|playlist|live|remastered|remaster|soundtrack|highlights from|anniversary|deluxe)\b/i;
+  const excludeTypes = new Set(['compilation', 'single']);
+
+  return tracks.filter(track => {
+    // assert query matches either title, artist, or album
+    const trackMatchesQuery =
+      queryRegex.test(track.title) ||
+      queryRegex.test(track.artist) ||
+      queryRegex.test(track.albumName);
+
+    // assert album type and album name are relevant
+    const isAlbumRelevant =
+      !excludeTypes.has(track.albumType) &&
+      !albumExclusionRegex.test(track.albumName);
+
+    const isTitleRelevant = !titleExclusionRegex.test(track.title);
+
+    return trackMatchesQuery && isAlbumRelevant && isTitleRelevant;
+  });
 }
