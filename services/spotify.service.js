@@ -140,7 +140,7 @@ export async function searchTracks(query) {
     title: item.name,
     artist: item.artists[0]?.name || 'Unknown Artist',
     albumName: item.album.name,
-    duration: item.duration_ms / 1000, // convert ms to seconds
+    duration: Math.ceil(item.duration_ms / 1000), // convert ms to seconds
     genres: [], // Spotify API does not provide genres at track level
     releasedAt: new Date(item.album.release_date),
     thumbnail:
