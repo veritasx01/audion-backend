@@ -12,6 +12,8 @@ const youtubeApiKey = process.env.YOUTUBE_API_KEY;
 export async function getTracksVideoURL(songs) {
   if (songs?.length === 0) return [];
 
+  const endpoint = `${BASE_URL}/search`;
+
   // Use Promise.all to wait for all async operations to complete
   const youtubePromises = songs.map(async song => {
     // construct query params for the youtube search API
@@ -26,27 +28,18 @@ export async function getTracksVideoURL(songs) {
     };
 
     try {
-      const youTubeResults = await httpService.get(
-        `${BASE_URL}/search`,
-        queryParams
-      );
+      const youTubeResults = await httpService.get(endpoint, queryParams);
 
-      if (youTubeResults.items && youTubeResults.items.length > 0) {
-        const item = youTubeResults.items[0];
-        const youTubeData = {
-          videoId: item.id.videoId,
-          title: item.snippet.title.toLowerCase(),
-          description: item.snippet.description.toLowerCase(),
-          channelTitle: item.snippet.channelTitle.toLowerCase(),
-          url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
-        };
-
-        loggerService.debug(`YouTube result for ${queryTerm}:`, youTubeData);
+      if (youTubeResults?.items?.length > 0) {
+        const youTubeData = youTubeResults.items[0];
 
         return {
           ...song,
-          url: youTubeData.url,
-          youtubeVideoId: youTubeData.videoId,
+          url: `https://www.youtube.com/watch?v=${youTubeData.id.videoId}`,
+          youtubeVideoId: youTubeData.id.videoId,
+          youtubeTitle: youTubeData.snippet.title,
+          youtubeDescription: youTubeData.snippet.description,
+          youtubeChannelTitle: youTubeData.snippet.channelTitle,
         };
       } else {
         loggerService.warn(`No YouTube results found for ${queryTerm}`);
@@ -72,7 +65,7 @@ export async function getTracksVideoURL(songs) {
   // Wait for all YouTube searches to complete
   const enrichedSongs = await Promise.all(youtubePromises);
 
-  // get durations for found videos
+  // enrich songs with the video duration info from videos endpoint
   const videoIds = enrichedSongs
     .filter(song => song.youtubeVideoId)
     .map(song => song.youtubeVideoId);
@@ -92,7 +85,7 @@ export async function getTracksVideoURL(songs) {
   loggerService.info(
     `YouTube search completed: ${
       enrichedSongs.filter(s => s.youtubeVideoId).length
-    }/${songs.length} videos found`
+    }/${songs.length} videos found: ${JSON.stringify(enrichedSongs)}`
   );
 
   return enrichedSongs;
