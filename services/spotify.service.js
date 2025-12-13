@@ -124,11 +124,11 @@ async function spotifyFetch(endpoint, params) {
 }
 
 // search tracks by free text
-export async function searchTracks(query) {
+export async function searchTracks(query, limit = 5) {
   const queryParams = {
     q: query.trim(),
     type: 'track',
-    limit: 50,
+    limit: limit,
     offset: 0,
   };
 
