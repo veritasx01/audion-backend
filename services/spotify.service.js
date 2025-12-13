@@ -152,16 +152,16 @@ export async function searchTracks(query, limit = 5) {
   );
 
   const relevantSongs = _excludeIrrelevantTracks(NormalizedSongs, query);
-  const irrelaventSongs = NormalizedSongs.filter(
+  const irrelevantSongs = NormalizedSongs.filter(
     song => !relevantSongs.includes(song)
   );
   loggerService.debug(
-    `Excluded ${irrelaventSongs.length} irrelevant tracks for query "${query}". Excluded tracks:`,
-    irrelaventSongs
+    `Excluded ${irrelevantSongs.length} irrelevant tracks for query "${query}". Excluded tracks:`,
+    irrelevantSongs
   );
   loggerService.debug('relevantSongs:', relevantSongs);
 
-  return relevantSongs;
+  return relevantSongs?.slice(0, limit);
 }
 
 function _excludeIrrelevantTracks(tracks, queryString) {
