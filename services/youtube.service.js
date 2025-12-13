@@ -2,14 +2,77 @@ import { httpService } from './http.service.js';
 import { loggerService } from './logger.service.js';
 
 export const youtubeService = {
-  getTracksVideoURL,
+  enrichSongsWithYouTubeData,
 };
 
 const BASE_URL = 'https://www.googleapis.com/youtube/v3';
-const youtubeApiKey = process.env.YOUTUBE_API_KEY;
+
+// API key rotation system
+let youtubeApiKeys = [];
+let currentKeyIndex = 0;
+let numOfKeys = 0; // this is set on _initializeApiKeys
+
+_initializeApiKeys();
+
+// Initialize API keys from environment variable
+function _initializeApiKeys() {
+  try {
+    youtubeApiKeys = JSON.parse(process.env.YOU_TUBE_API_KEYS || '[]');
+    numOfKeys = youtubeApiKeys.length;
+    if (youtubeApiKeys.length === 0) {
+      loggerService.error(
+        'No YouTube API keys found in environment variables under the key YOU_TUBE_API_KEYS. set it to YOU_TUBE_API_KEYS=["API_KEY_1","API_KEY_2",...]'
+      );
+    }
+  } catch (error) {
+    loggerService.error('Failed to parse YouTube API keys:', error);
+    youtubeApiKeys = [process.env.YOUTUBE_API_KEY].filter(Boolean);
+  }
+}
+
+// Get current API key
+function _getCurrentApiKey() {
+  return youtubeApiKeys[currentKeyIndex] || youtubeApiKeys[0];
+}
+
+// Rotate to next available API key when quota is exceeded
+function _rotateApiKey() {
+  currentKeyIndex = (currentKeyIndex + 1) % youtubeApiKeys.length;
+  loggerService.info(
+    `Rotated to YouTube API key ${currentKeyIndex + 1}/${youtubeApiKeys.length}`
+  );
+  return _getCurrentApiKey();
+}
+
+// Make YouTube API request with automatic key rotation handling
+async function _makeYouTubeRequest(endpoint, params, maxRetries = numOfKeys) {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const requestParams = {
+        ...params,
+        key: _getCurrentApiKey(),
+      };
+
+      const response = await httpService.get(endpoint, requestParams);
+      return response;
+    } catch (error) {
+      // Check if it's a quota exceeded error (403)
+      if (error.response?.status === 403 && attempt < maxRetries - 1) {
+        loggerService.warn(
+          `YouTube API quota exceeded for key ${
+            currentKeyIndex + 1
+          }, rotating to next key`
+        );
+        rotateApiKey();
+        continue;
+      }
+      throw error;
+    }
+  }
+}
 
 // Search YouTube for videos based on tracks metadata (song title and artist)
-export async function getTracksVideoURL(songs) {
+export async function enrichSongsWithYouTubeData(songs) {
   if (songs?.length === 0) return [];
 
   const endpoint = `${BASE_URL}/search`;
@@ -24,11 +87,10 @@ export async function getTracksVideoURL(songs) {
       type: 'video',
       maxResults: 1, // Get top result for each song
       order: 'relevance',
-      key: youtubeApiKey,
     };
 
     try {
-      const youTubeResults = await httpService.get(endpoint, queryParams);
+      const youTubeResults = await makeYouTubeRequest(endpoint, queryParams);
 
       if (youTubeResults?.items?.length > 0) {
         const youTubeData = youTubeResults.items[0];
@@ -91,15 +153,16 @@ export async function getTracksVideoURL(songs) {
   return enrichedSongs;
 }
 
+// gets videos durations from YouTube videos endpoint for an array of video IDs
 async function _getVideosDuration(videoIds) {
+  const endpoint = `${BASE_URL}/videos`;
   const queryParams = {
     part: 'contentDetails',
     id: videoIds.join(','),
-    key: youtubeApiKey,
   };
 
   try {
-    const response = await httpService.get(`${BASE_URL}/videos`, queryParams);
+    const response = await makeYouTubeRequest(endpoint, queryParams);
 
     const durations = new Map();
     response.items.forEach(item => {
