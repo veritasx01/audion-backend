@@ -10,11 +10,12 @@ export const songService = { query, getById, songExists, remove, add, update };
 
 const PAGE_SIZE = 5;
 
-async function query(filterBy = {}, limit = PAGE_SIZE) {
+async function query(filterBy = {}, limit) {
   const query = filterBy?.searchString || '';
+  const maxSongs = limit || PAGE_SIZE;
 
   // search song on spotify
-  const songs = await spotifyService.searchTracks(query, limit);
+  const songs = await spotifyService.searchTracks(query, maxSongs);
 
   // enrich songs with youtube data (video URL & duration)
   const enrichedSongs = await youtubeService.enrichSongsWithYouTubeData(songs);
