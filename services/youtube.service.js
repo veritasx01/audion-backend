@@ -63,7 +63,7 @@ async function _makeYouTubeRequest(endpoint, params, maxRetries = numOfKeys) {
             currentKeyIndex + 1
           }, rotating to next key`
         );
-        rotateApiKey();
+        _rotateApiKey();
         continue;
       }
       throw error;
@@ -90,7 +90,7 @@ export async function enrichSongsWithYouTubeData(songs) {
     };
 
     try {
-      const youTubeResults = await makeYouTubeRequest(endpoint, queryParams);
+      const youTubeResults = await _makeYouTubeRequest(endpoint, queryParams);
 
       if (youTubeResults?.items?.length > 0) {
         const youTubeData = youTubeResults.items[0];
@@ -162,7 +162,7 @@ async function _getVideosDuration(videoIds) {
   };
 
   try {
-    const response = await makeYouTubeRequest(endpoint, queryParams);
+    const response = await _makeYouTubeRequest(endpoint, queryParams);
 
     const durations = new Map();
     response.items.forEach(item => {

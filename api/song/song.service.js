@@ -17,7 +17,7 @@ async function query(filterBy = {}, limit = PAGE_SIZE) {
   const songs = await spotifyService.searchTracks(query, limit);
 
   // enrich songs with youtube data (video URL & duration)
-  const enrichedSongs = await youtubeService.getTracksVideoURL(songs);
+  const enrichedSongs = await youtubeService.enrichSongsWithYouTubeData(songs);
 
   loggerService.debug(
     `Enriched ${
