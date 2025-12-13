@@ -17,11 +17,11 @@ _initializeApiKeys();
 // Initialize API keys from environment variable
 function _initializeApiKeys() {
   try {
-    youtubeApiKeys = JSON.parse(process.env.YOU_TUBE_API_KEYS || '[]');
+    youtubeApiKeys = JSON.parse(process.env.YOUTUBE_API_KEYS || '[]');
     numOfKeys = youtubeApiKeys.length;
     if (youtubeApiKeys.length === 0) {
       loggerService.error(
-        'No YouTube API keys found in environment variables under the key YOU_TUBE_API_KEYS. set it to YOU_TUBE_API_KEYS=["API_KEY_1","API_KEY_2",...]'
+        'No YouTube API keys found in environment variables under the key YOUTUBE_API_KEYS. set it to YOUTUBE_API_KEYS=["API_KEY_1","API_KEY_2",...]'
       );
     }
   } catch (error) {
