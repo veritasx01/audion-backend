@@ -227,8 +227,7 @@ function _excludeIrrelevantTracks(tracks, queryString) {
   const titleExclusionRegex =
     /\b(remix|edit|version|karaoke|instrumental|cover)\b|\s-\s*live\b/i;
   const albumExclusionRegex =
-    /\b(greatest hits|best of|mix|remix|collection|playlist|live|remastered|remaster|soundtrack|highlights from|anniversary|deluxe)\b/i;
-  //const excludeTypes = new Set(['compilation', 'single']);
+    /\b(best of|mix|remix|collection|playlist|live|soundtrack|highlights from|anniversary)\b/i;
 
   return tracks.filter(track => {
     // assert query matches either title, artist, or album
@@ -237,9 +236,8 @@ function _excludeIrrelevantTracks(tracks, queryString) {
       queryRegex.test(track.artist) ||
       queryRegex.test(track.albumName);
 
-    // assert album type and album name are relevant
-    const isAlbumRelevant = !albumExclusionRegex.test(track.albumName); // && !excludeTypes.has(track.albumType)
-
+    // assert album & title name are relevant
+    const isAlbumRelevant = !albumExclusionRegex.test(track.albumName);
     const isTitleRelevant = !titleExclusionRegex.test(track.title);
 
     return trackMatchesQuery && isAlbumRelevant && isTitleRelevant;
