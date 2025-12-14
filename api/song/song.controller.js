@@ -4,7 +4,7 @@ import { songService } from './song.service.js';
 export async function getSongs(req, res) {
   try {
     const filterBy = {
-      searchString: req.query.q || '',
+      searchString: req.query.q?.trim() || '',
       artist: req.query.artist || '',
       pageIdx: req.query.pageIdx,
     };

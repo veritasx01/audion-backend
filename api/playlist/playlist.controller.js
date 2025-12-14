@@ -6,7 +6,7 @@ export async function getPlaylists(req, res) {
   try {
     const filterBy = {
       playlistIds: req.query.playlistIds?.split(','),
-      searchString: req.query.q,
+      searchString: req.query.q?.trim() || '',
       genre: req.query.genre,
     };
     const sortBy = req.query.sortBy || '';
