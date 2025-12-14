@@ -14,22 +14,29 @@ async function query(filterBy = {}, limit) {
   const query = filterBy?.searchString || '';
   const maxSongs = limit || PAGE_SIZE;
 
-  // search song on spotify
-  const songs = await spotifyService.searchTracks(query, maxSongs);
+  try {
+    // search song on spotify
+    const songs = await spotifyService.searchTracks(query, maxSongs);
 
-  // enrich songs with youtube data (video URL & duration)
-  const enrichedSongs = await youtubeService.enrichSongsWithYouTubeData(songs);
+    // enrich songs with youtube data (video URL & duration)
+    const enrichedSongs = await youtubeService.enrichSongsWithYouTubeData(
+      songs
+    );
 
-  loggerService.debug(
-    `Enriched ${
-      enrichedSongs.length
-    } songs with YouTube data, for query: ${query}. limit: ${limit}. result: ${JSON.stringify(
-      enrichedSongs
-    )}`
-  );
+    loggerService.debug(
+      `Enriched ${
+        enrichedSongs.length
+      } songs with YouTube data, for query: ${query}. limit: ${limit}. result: ${JSON.stringify(
+        enrichedSongs
+      )}`
+    );
 
-  // return only songs with a matching youtube URL
-  return enrichedSongs.filter(song => song.url !== null);
+    // return only songs with a matching youtube URL
+    return enrichedSongs.filter(song => song.url !== null);
+  } catch (err) {
+    loggerService.error(`Failed to query songs for ${query}`, err);
+    throw err;
+  }
 }
 
 async function _queryDB(filterBy = {}, sortBy, sortDir) {
