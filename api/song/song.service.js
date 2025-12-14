@@ -3,12 +3,43 @@ import { dbService, dbCollections } from '../../services/db.service.js';
 import { loggerService } from '../../services/logger.service.js';
 import { utilService } from '../../services/util.service.js';
 import { asyncLocalStorage } from '../../services/als.service.js';
+import { spotifyService } from '../../services/spotify.service.js';
+import { youtubeService } from '../../services/youtube.service.js';
 
 export const songService = { query, getById, songExists, remove, add, update };
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 5;
 
-async function query(filterBy = {}, sortBy, sortDir) {
+async function query(filterBy = {}, limit) {
+  const query = filterBy?.searchString || '';
+  const maxSongs = limit || PAGE_SIZE;
+
+  try {
+    // search song on spotify
+    const songs = await spotifyService.searchTracks(query, maxSongs);
+
+    // enrich songs with youtube data (video URL & duration)
+    const enrichedSongs = await youtubeService.enrichSongsWithYouTubeData(
+      songs
+    );
+
+    loggerService.debug(
+      `Enriched ${
+        enrichedSongs.length
+      } songs with YouTube data, for query: ${query}. limit: ${limit}. result: ${JSON.stringify(
+        enrichedSongs
+      )}`
+    );
+
+    // return only songs with a matching youtube URL
+    return enrichedSongs.filter(song => song.url !== null);
+  } catch (err) {
+    loggerService.error(`Failed to query songs for ${query}`, err);
+    throw err;
+  }
+}
+
+async function _queryDB(filterBy = {}, sortBy, sortDir) {
   try {
     const criteria = _buildFilterCriteria(filterBy);
     const sortObject = utilService.buildSortObject(sortBy, sortDir);
