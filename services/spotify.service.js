@@ -1,6 +1,7 @@
-import e from 'express';
 import { httpService } from './http.service.js';
+import { utilService } from './util.service.js';
 import { loggerService } from './logger.service.js';
+import { request } from 'express';
 
 export const spotifyService = {
   searchTracks,
@@ -81,14 +82,11 @@ async function _getToken() {
 
 async function spotifyFetch(endpoint, params) {
   let token = await _getToken();
-  const authHeader = { Authorization: `Bearer ${token}` };
   const url = `${BASE_URL}${endpoint}`;
-
-  loggerService.debug('Spotify request:', { url, params, hasToken: !!token });
+  const authHeader = { Authorization: `Bearer ${token}` };
 
   try {
     let response = await httpService.get(url, params, authHeader);
-    loggerService.debug('Spotify response received:', typeof response);
     return response;
   } catch (error) {
     loggerService.error('Spotify API error details:', {
@@ -97,6 +95,8 @@ async function spotifyFetch(endpoint, params) {
       statusText: error.response?.statusText,
       data: error.response?.data,
       url: url,
+      requestParams: params,
+      hasToken: !!token,
     });
 
     // If it's a 401 error, try refreshing token once
@@ -126,120 +126,77 @@ async function spotifyFetch(endpoint, params) {
 
 // search tracks by free text
 export async function searchTracks(query, limit = 5) {
-  const queryParams = {
-    q: query.trim(),
-    type: 'track',
-    limit: limit,
-    offset: 0,
-  };
-
-  const tracksData = await spotifyFetch('search', queryParams);
-
-  // Normalize spotify data to Audio song data structure
-  const NormalizedSongs = tracksData.tracks.items.map(track => ({
-    _id: track.id,
-    title: track.name,
-    artist: track.artists[0]?.name || '',
-    albumName: track.album.name,
-    albumType: track.album.album_type,
-    duration: Math.ceil(track.duration_ms / 1000), // convert ms to seconds
-    genres: [], // Spotify API does not provide genres at track level
-    releasedAt: new Date(track.album.release_date),
-    thumbnail: track.album?.images[0]?.url || null,
-  }));
-
-  loggerService.debug(
-    `Normalized ${NormalizedSongs.length} Spotify tracks for query "${query}"`
-  );
-
-  const relevantSongs = _excludeIrrelevantTracks(NormalizedSongs, query);
-  const irrelevantSongs = NormalizedSongs.filter(
-    song => !relevantSongs.includes(song)
-  );
-  loggerService.debug(
-    `Excluded ${irrelevantSongs.length} irrelevant tracks for query "${query}". Excluded tracks:`,
-    irrelevantSongs
-  );
-  loggerService.debug('relevantSongs:', relevantSongs);
-
-  return relevantSongs?.slice(0, limit);
-}
-
-export async function searchPlaylists(query, limit = 50) {
-  const queryParams = {
-    q: query.trim(),
-    type: 'playlist',
-    limit: limit,
-  };
-
   try {
-    // Get Spotify playlists matching the query
-    const playlistsData = await spotifyFetch('search', queryParams);
-    if (!playlistsData?.playlists?.items?.length) return [];
+    // fetch tracks from Spotify API
+    const queryParams = { q: query, type: 'track', limit: 50 };
+    const tracksData = await spotifyFetch('search', queryParams);
 
-    console.log('found playlists:', playlistsData.playlists.items.length);
+    // map spotify track schema to our app song schema
+    let songs = tracksData.tracks.items.map(_transformSongSchema);
 
-    const playlists = playlistsData.playlists.items
-      .filter(playlist => playlist && playlist.id) // Filter out null/invalid playlists
-      .map((playlist, idx) => {
-        console.log(`playlist ${idx}`, playlist?.name, playlist?.id);
-        return {
-          _id: playlist.id,
-          title: playlist.name || 'Untitled Playlist',
-          description: playlist.description || '',
-          thumbnail: playlist.images?.[0]?.url || null,
-          createdAt: new Date(),
-          createdBy: {
-            _id: playlist.owner?.id || 'unknown',
-            fullName: playlist.owner?.display_name || 'Unknown User',
-          },
-        };
-      });
+    // exclude irrelevant tracks based on title/album heuristics
+    const relevantSongs = _excludeIrrelevantTracks(songs, query);
+    loggerService.debug(`Excluded the following tracks for query "${query}":`);
+    loggerService.debug(songs.filter(song => !relevantSongs.includes(song)));
 
-    loggerService.debug(
-      `Fetched ${playlists.length} Spotify playlists for query "${query}". Now fetching tracks for each playlist in parallel...`
-    );
-
-    // Fetch tracks for all playlists in parallel using Promise.all
-    const playlistTrackPromises = playlists.map(async playlist => {
-      try {
-        const tracks = await getPlaylistTracks(playlist._id);
-        return {
-          ...playlist,
-          tracks: tracks || [],
-        };
-      } catch (error) {
-        loggerService.error(
-          `Failed to fetch tracks for playlist ${playlist._id} (${playlist.title}):`,
-          error
-        );
-        // Return playlist without tracks on error
-        return {
-          ...playlist,
-          tracks: [],
-        };
-      }
-    });
-
-    // Wait for all playlist track requests to complete
-    let enrichedPlaylists = await Promise.all(playlistTrackPromises);
-    enrichedPlaylists = enrichedPlaylists.filter(p => p.tracks.length > 0);
-
-    loggerService.debug(
-      `Enriched ${enrichedPlaylists.length} playlists with tracks. `
-    );
-
-    return enrichedPlaylists;
+    // return top relevant tracks up to limit
+    return relevantSongs?.slice(0, limit);
   } catch (err) {
-    loggerService.error(
-      `Spotify playlists search by query "${query}" failed`,
-      err
-    );
+    loggerService.error(`Spotify tracks search by "${query}" failed`, err);
     throw err;
   }
 }
 
-export async function getPlaylistTracks(playlistId, limit = 50) {
+export async function searchPlaylists(query, limit = 50) {
+  const params = { q: query, type: 'playlist', limit };
+
+  try {
+    // Get Spotify playlists matching the query
+    const playlistsData = await spotifyFetch('search', params);
+    if (!playlistsData?.playlists?.items?.length) return [];
+
+    // Transform Spotify playlist schema to our app schema
+    let playlists = playlistsData.playlists.items
+      .map(_transformPlaylistSchema)
+      .filter(p => p !== null);
+
+    // Collect in parallel tracks for all playlists
+    playlists = await _getPlaylistsTracks(playlists);
+    playlists = playlists.filter(p => p.tracks.length > 0);
+
+    return playlists;
+  } catch (err) {
+    loggerService.error(`Spotify playlists search by  "${query}" failed`, err);
+    throw err;
+  }
+}
+
+/* This function receives an array of Spotify playlists and fetches their tracks
+   It servers as a wrapper around _getPlaylistTracks to process multiple playlists in parallel. */
+async function _getPlaylistsTracks(playlists) {
+  // Fetch tracks for all playlists in parallel using Promise.all
+  const playlistsTracksPromises = playlists.map(async playlist => {
+    let tracks = [];
+    let playlistId = playlist.spotifyPlaylistId;
+    try {
+      tracks = await _getPlaylistTracks(playlistId);
+    } catch (err) {
+      loggerService.error(`Failed fetching tracks for ${playlistId}:`, err);
+    } finally {
+      return {
+        ...playlist,
+        tracks: tracks || [], // Ensure tracks is at least an empty array
+      };
+    }
+  });
+
+  // Wait for all playlist track requests to complete
+  const playlistsWithTracks = await Promise.all(playlistsTracksPromises);
+  return playlistsWithTracks;
+}
+
+// This function receives a Spotify playlist ID and fetches its tracks
+async function _getPlaylistTracks(playlistId, limit = 50) {
   const endpoint = `playlists/${playlistId}/tracks`;
   const outputFields =
     'items(added_at,track(id,name,images,artists(id,name),album(id,name,release_date,images)))';
@@ -249,33 +206,15 @@ export async function getPlaylistTracks(playlistId, limit = 50) {
     const tracksData = await spotifyFetch(endpoint, queryParams);
     if (!tracksData?.items?.length) return [];
 
-    console.log('mapping tracks for playlist:', playlistId);
-    // Normalize spotify track data to an Audion song data structure
-    const songs = tracksData.items.map(item => {
-      const track = item.track;
-      return {
-        _id: track.id,
-        title: track.name,
-        artist: track.artists[0]?.name || '',
-        albumName: track.album.name,
-        duration: 0,
-        genres: [], // Spotify API does not provide genres at track level
-        addedAt: new Date(item.added_at),
-        releasedAt: new Date(track.album.release_date),
-        thumbnail: track.album?.images[0]?.url || null,
-      };
+    let tracks = tracksData.items.map(item => {
+      const song = _transformSongSchema(item.track);
+      song.addedAt = item.added_at ? new Date(item.added_at) : null;
+      return song;
     });
 
-    loggerService.debug(
-      `Fetched and normalized ${songs.length} tracks from Spotify playlist ${playlistId}`
-    );
-
-    return songs;
+    return tracks;
   } catch (err) {
-    loggerService.error(
-      `Failed to fetch tracks for Spotify playlist ${playlistId}`,
-      err
-    );
+    loggerService.error(`Failed fetching tracks for ${playlistId}`, err);
     throw err;
   }
 }
@@ -305,4 +244,34 @@ function _excludeIrrelevantTracks(tracks, queryString) {
 
     return trackMatchesQuery && isAlbumRelevant && isTitleRelevant;
   });
+}
+
+function _transformSongSchema(track) {
+  if (!track) return null;
+  const imgs = track.album?.images || [];
+  return {
+    _id: track.id,
+    title: track.name,
+    artist: track.artists[0]?.name || '',
+    albumName: track.album.name,
+    duration: 0, // to be filled later by youtube service
+    releasedAt: new Date(track.album.release_date),
+    thumbnail: imgs[2]?.url || imgs[1]?.url || imgs[0]?.url || null, // Use small/medium images first
+  };
+}
+
+function _transformPlaylistSchema(playlist) {
+  if (!playlist) return null;
+  const imgs = playlist.images || [];
+  return {
+    spotifyPlaylistId: playlist.id,
+    title: playlist.name || 'Untitled Playlist',
+    description: playlist.description || '',
+    thumbnail: imgs[2]?.url || imgs[1]?.url || imgs[0]?.url || null, // Use small/medium images first
+    createdBy: {
+      _id: playlist.owner?.id || 'unknown',
+      fullName: playlist.owner?.display_name || 'Unknown User',
+      isSpotifyUser: true,
+    },
+  };
 }
