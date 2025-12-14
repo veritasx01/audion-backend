@@ -4,6 +4,7 @@ import { loggerService } from './logger.service.js';
 
 export const spotifyService = {
   searchTracks,
+  searchPlaylists,
 };
 
 const BASE_URL = 'https://api.spotify.com/v1/';
@@ -162,6 +163,121 @@ export async function searchTracks(query, limit = 5) {
   loggerService.debug('relevantSongs:', relevantSongs);
 
   return relevantSongs?.slice(0, limit);
+}
+
+export async function searchPlaylists(query, limit = 50) {
+  const queryParams = {
+    q: query.trim(),
+    type: 'playlist',
+    limit: limit,
+  };
+
+  try {
+    // Get Spotify playlists matching the query
+    const playlistsData = await spotifyFetch('search', queryParams);
+    if (!playlistsData?.playlists?.items?.length) return [];
+
+    console.log('found playlists:', playlistsData.playlists.items.length);
+
+    const playlists = playlistsData.playlists.items
+      .filter(playlist => playlist && playlist.id) // Filter out null/invalid playlists
+      .map((playlist, idx) => {
+        console.log(`playlist ${idx}`, playlist?.name, playlist?.id);
+        return {
+          _id: playlist.id,
+          title: playlist.name || 'Untitled Playlist',
+          description: playlist.description || '',
+          thumbnail: playlist.images?.[0]?.url || null,
+          createdAt: new Date(),
+          createdBy: {
+            _id: playlist.owner?.id || 'unknown',
+            fullName: playlist.owner?.display_name || 'Unknown User',
+          },
+        };
+      });
+
+    loggerService.debug(
+      `Fetched ${playlists.length} Spotify playlists for query "${query}". Now fetching tracks for each playlist in parallel...`
+    );
+
+    // Fetch tracks for all playlists in parallel using Promise.all
+    const playlistTrackPromises = playlists.map(async playlist => {
+      try {
+        const tracks = await getPlaylistTracks(playlist._id);
+        return {
+          ...playlist,
+          tracks: tracks || [],
+        };
+      } catch (error) {
+        loggerService.error(
+          `Failed to fetch tracks for playlist ${playlist._id} (${playlist.title}):`,
+          error
+        );
+        // Return playlist without tracks on error
+        return {
+          ...playlist,
+          tracks: [],
+        };
+      }
+    });
+
+    // Wait for all playlist track requests to complete
+    let enrichedPlaylists = await Promise.all(playlistTrackPromises);
+    enrichedPlaylists = enrichedPlaylists.filter(p => p.tracks.length > 0);
+
+    loggerService.debug(
+      `Enriched ${enrichedPlaylists.length} playlists with tracks. `
+    );
+
+    return enrichedPlaylists;
+  } catch (err) {
+    loggerService.error(
+      `Spotify playlists search by query "${query}" failed`,
+      err
+    );
+    throw err;
+  }
+}
+
+export async function getPlaylistTracks(playlistId, limit = 50) {
+  const endpoint = `playlists/${playlistId}/tracks`;
+  const outputFields =
+    'items(added_at,track(id,name,images,artists(id,name),album(id,name,release_date,images)))';
+  const queryParams = { limit, fields: outputFields };
+  try {
+    // Fetch playlist tracks from Spotify API
+    const tracksData = await spotifyFetch(endpoint, queryParams);
+    if (!tracksData?.items?.length) return [];
+
+    console.log('mapping tracks for playlist:', playlistId);
+    // Normalize spotify track data to an Audion song data structure
+    const songs = tracksData.items.map(item => {
+      const track = item.track;
+      return {
+        _id: track.id,
+        title: track.name,
+        artist: track.artists[0]?.name || '',
+        albumName: track.album.name,
+        duration: 0,
+        genres: [], // Spotify API does not provide genres at track level
+        addedAt: new Date(item.added_at),
+        releasedAt: new Date(track.album.release_date),
+        thumbnail: track.album?.images[0]?.url || null,
+      };
+    });
+
+    loggerService.debug(
+      `Fetched and normalized ${songs.length} tracks from Spotify playlist ${playlistId}`
+    );
+
+    return songs;
+  } catch (err) {
+    loggerService.error(
+      `Failed to fetch tracks for Spotify playlist ${playlistId}`,
+      err
+    );
+    throw err;
+  }
 }
 
 function _excludeIrrelevantTracks(tracks, queryString) {
