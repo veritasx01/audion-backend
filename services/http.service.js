@@ -19,6 +19,9 @@ export const httpService = {
   patch(endpoint, data, headers) {
     return ajax(endpoint, 'PATCH', data, headers);
   },
+  getBinary(endpoint, headers = {}) {
+    return ajaxBinary(endpoint, headers);
+  },
 };
 
 async function ajax(endpoint, method = 'GET', data = null, headers = {}) {
@@ -34,6 +37,25 @@ async function ajax(endpoint, method = 'GET', data = null, headers = {}) {
     loggerService.error(
       `Error '${err}' during ${method} request to ${endpoint}: with data: `,
       data
+    );
+    throw err;
+  }
+}
+
+async function ajaxBinary(endpoint, headers = {}) {
+  const options = {
+    url: endpoint,
+    method: 'GET',
+    headers,
+    responseType: 'arraybuffer', // Important: get binary data as ArrayBuffer
+  };
+
+  try {
+    const res = await axios(options);
+    return Buffer.from(res.data); // Convert ArrayBuffer to Buffer
+  } catch (err) {
+    loggerService.error(
+      `Error '${err}' during binary GET request to ${endpoint}`
     );
     throw err;
   }
