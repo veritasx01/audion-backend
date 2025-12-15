@@ -33,6 +33,22 @@ export async function getPlaylist(req, res) {
   }
 }
 
+export async function getPlaylistSongFullDetails(req, res) {
+  const { playlistId, songId } = req.params;
+  try {
+    const song = await playlistService.getSongFullDetails(playlistId, songId);
+    if (!song) {
+      res.status(404).send({ error: 'Resource not found' });
+    } else res.json(song);
+  } catch (err) {
+    loggerService.error(
+      `Failed to get full details for song ${songId} in playlist ${playlistId}`,
+      err
+    );
+    res.status(400).send({ error: err });
+  }
+}
+
 export async function updatePlaylist(req, res) {
   const { playlistId } = req.params;
   const { loggedinUser, body: playlistData } = req;

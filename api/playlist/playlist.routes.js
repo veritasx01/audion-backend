@@ -3,6 +3,7 @@ import {
   addPlaylist,
   getPlaylist,
   getPlaylists,
+  getPlaylistSongFullDetails,
   removePlaylist,
   updatePlaylist,
   addSongToPlaylist,
@@ -14,6 +15,7 @@ const router = express.Router();
 // Routes for /api/playlist
 router.get('/', getPlaylists);
 router.get('/:playlistId', getPlaylist);
+router.get('/:playlistId/song/:songId', getPlaylistSongFullDetails);
 router.delete('/:playlistId', removePlaylist);
 router.patch('/:playlistId', updatePlaylist);
 router.post('/', addPlaylist);

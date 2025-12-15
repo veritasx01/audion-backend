@@ -3,6 +3,7 @@ import { utilService } from '../../services/util.service.js';
 import { loggerService } from '../../services/logger.service.js';
 import { dbService, dbCollections } from '../../services/db.service.js';
 import { searchPlaylists } from '../../services/spotify.service.js';
+import { enrichSongsWithYouTubeData } from '../../services/youtube.service.js';
 
 export const playlistService = {
   query,
@@ -14,6 +15,7 @@ export const playlistService = {
   update,
   addSongToPlaylist,
   removeSongFromPlaylist,
+  getSongFullDetails,
 };
 
 const PAGE_SIZE = 50;
@@ -228,6 +230,81 @@ async function removeSongFromPlaylist(playlistId, songId) {
   } catch (err) {
     loggerService.error(
       `Failed to remove song ${songId} from playlist ${playlistId}`,
+      err
+    );
+    throw err;
+  }
+}
+
+async function getSongFullDetails(playlistId, songId) {
+  try {
+    const playlist = await getById(playlistId);
+
+    const song = playlist.songs.find(song => song._id === songId);
+    if (!song) throw `Song ${songId} not found in playlist ${playlistId}`;
+
+    return song.url && song.duration
+      ? song
+      : await enrichSongWithYouTubeData(playlist, song);
+  } catch (err) {
+    loggerService.error(
+      `Failed to get full details for song ${songId} in playlist ${playlistId}`,
+      err
+    );
+    throw err;
+  }
+}
+
+async function enrichSongWithYouTubeData(playlist, song) {
+  const playlistId = playlist._id;
+  const songId = song._id;
+  try {
+    const collection = await dbService.getCollection(dbCollections.PLAYLIST);
+    loggerService.debug(
+      `Enriching song ${songId} in playlist ${playlistId} with YouTube data. Current state: ${JSON.stringify(
+        song
+      )}`
+    );
+    const enrichedSongs = await enrichSongsWithYouTubeData([song]);
+    const enrichedSong = enrichedSongs[0];
+    if (!enrichedSong) {
+      throw `YouTube enrichment returned no data for song ${songId} in playlist ${playlistId}`;
+    }
+    loggerService.debug(
+      `Enriched song ${songId} in playlist ${playlistId} with YouTube data: ${JSON.stringify(
+        enrichedSong
+      )}`
+    );
+    // Update the song in the playlist
+    const updateResult = await collection.updateOne(
+      {
+        _id:
+          typeof playlist._id === 'string'
+            ? ObjectId.createFromHexString(playlist._id)
+            : playlist._id,
+        'songs._id': song._id,
+      },
+      {
+        $set: {
+          'songs.$.youtubeVideoId': enrichedSong.youtubeVideoId,
+          'songs.$.url': enrichedSong.url,
+          'songs.$.duration': enrichedSong.duration,
+        },
+      }
+    );
+    if (
+      updateResult.acknowledged !== true ||
+      updateResult.modifiedCount === 0
+    ) {
+      throw `Failed to update song ${songId} in playlist ${playlistId} with YouTube data`;
+    }
+    loggerService.debug(
+      `Successfully updated song ${songId} in playlist ${playlistId} with YouTube data`
+    );
+    return enrichedSong;
+  } catch (err) {
+    loggerService.error(
+      `Failed to enrich song ${songId} in playlist ${playlistId} with YouTube data`,
       err
     );
     throw err;
