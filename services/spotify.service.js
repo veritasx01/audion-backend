@@ -147,7 +147,7 @@ export async function searchTracks(query, limit = 5) {
   }
 }
 
-export async function searchPlaylists(query, limit = 20) {
+export async function searchPlaylists(query, limit = 10) {
   const params = { q: query, type: 'playlist', limit };
 
   try {
@@ -199,7 +199,7 @@ async function _getPlaylistsTracks(playlists) {
 async function _getPlaylistTracks(playlistId, limit = 50) {
   const endpoint = `playlists/${playlistId}/tracks`;
   const outputFields =
-    'items(added_at,track(id,name,images,artists(id,name),album(id,name,release_date,images)))';
+    'items(added_at,track(id,name,duration_ms,images,artists(id,name),album(id,name,release_date,images)))';
   const queryParams = { limit, fields: outputFields };
   try {
     // Fetch playlist tracks from Spotify API
@@ -252,7 +252,7 @@ function _transformSongSchema(track) {
     title: track.name,
     artist: track.artists[0]?.name || '',
     albumName: track.album.name,
-    duration: 0, // to be filled later by youtube service
+    duration: Math.ceil(track.duration_ms / 1000), // default initialization for display on playlist details table, would be overriden later with youtube video duration
     releasedAt: new Date(track.album.release_date),
     thumbnail: imgs[0]?.url,
   };
