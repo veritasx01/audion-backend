@@ -254,7 +254,7 @@ function _transformSongSchema(track) {
     albumName: track.album.name,
     duration: 0, // to be filled later by youtube service
     releasedAt: new Date(track.album.release_date),
-    thumbnail: imgs[2]?.url || imgs[1]?.url || imgs[0]?.url || null, // Use small/medium images first
+    thumbnail: imgs[0]?.url,
   };
 }
 
@@ -265,7 +265,7 @@ function _transformPlaylistSchema(playlist) {
     spotifyPlaylistId: playlist.id,
     title: playlist.name || 'Untitled Playlist',
     description: playlist.description || '',
-    thumbnail: imgs[2]?.url || imgs[1]?.url || imgs[0]?.url || null, // Use small/medium images first
+    thumbnail: imgs[0]?.url,
     createdBy: {
       _id: playlist.owner?.id || 'unknown',
       fullName: playlist.owner?.display_name || 'Unknown User',
