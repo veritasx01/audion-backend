@@ -147,7 +147,7 @@ export async function searchTracks(query, limit = 5) {
   }
 }
 
-export async function searchPlaylists(query, limit = 50) {
+export async function searchPlaylists(query, limit = 20) {
   const params = { q: query, type: 'playlist', limit };
 
   try {
@@ -162,7 +162,7 @@ export async function searchPlaylists(query, limit = 50) {
 
     // Collect in parallel tracks for all playlists
     playlists = await _getPlaylistsTracks(playlists);
-    playlists = playlists.filter(p => p.tracks.length > 0);
+    playlists = playlists.filter(p => p.songs.length > 0);
 
     return playlists;
   } catch (err) {
@@ -185,7 +185,7 @@ async function _getPlaylistsTracks(playlists) {
     } finally {
       return {
         ...playlist,
-        tracks: tracks || [], // Ensure tracks is at least an empty array
+        songs: tracks || [], // Ensure tracks is at least an empty array
       };
     }
   });
@@ -271,5 +271,6 @@ function _transformPlaylistSchema(playlist) {
       fullName: playlist.owner?.display_name || 'Unknown User',
       isSpotifyUser: true,
     },
+    hasOnlyMetadata: true, // indicates tracks need to be fetched separately from youtube service
   };
 }
