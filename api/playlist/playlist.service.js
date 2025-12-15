@@ -2,6 +2,7 @@ import { ObjectId } from 'mongodb';
 import { utilService } from '../../services/util.service.js';
 import { loggerService } from '../../services/logger.service.js';
 import { dbService, dbCollections } from '../../services/db.service.js';
+import { searchPlaylists } from '../../services/spotify.service.js';
 
 export const playlistService = {
   query,
@@ -9,6 +10,7 @@ export const playlistService = {
   playlistExists,
   remove,
   add,
+  addMany,
   update,
   addSongToPlaylist,
   removeSongFromPlaylist,
@@ -17,6 +19,28 @@ export const playlistService = {
 const PAGE_SIZE = 50;
 
 async function query(filterBy = {}, sortBy, sortDir) {
+  // If searchString is provided, search Spotify playlists
+  if (filterBy.searchString && !filterBy.userId && !filterBy.playlistIds) {
+    const playlists = await querySpotifyPlaylists(filterBy.searchString);
+    const savedPlaylists = await addMany(playlists);
+    return savedPlaylists;
+  }
+
+  // Otherwise, query local database
+  return await queryDB(filterBy, sortBy, sortDir);
+}
+
+async function querySpotifyPlaylists(query, limit = 20) {
+  try {
+    const spotifyPlaylists = await searchPlaylists(query, limit);
+    return spotifyPlaylists;
+  } catch (err) {
+    loggerService.error('Failed to query Spotify playlists', err);
+    throw err;
+  }
+}
+
+async function queryDB(filterBy = {}, sortBy, sortDir) {
   try {
     const criteria = _buildFilterCriteria(filterBy);
     const sortObject = utilService.buildSortObject(sortBy, sortDir);
@@ -105,6 +129,35 @@ async function add(playlist) {
     return insertedPlaylist;
   } catch (err) {
     loggerService.error(`Failed to add playlist`, err);
+    throw err;
+  }
+}
+
+async function addMany(playlists) {
+  try {
+    if (!Array.isArray(playlists) || playlists.length === 0) {
+      throw new Error('Playlists must be a non-empty array');
+    }
+
+    const collection = await dbService.getCollection(dbCollections.PLAYLIST);
+    const result = await collection.insertMany(playlists, { ordered: false });
+
+    // Return the playlists with their generated _ids and createdAt
+    const insertedPlaylists = playlists.map((playlist, index) => {
+      const insertedId = result.insertedIds[index];
+      return {
+        ...playlist,
+        _id: insertedId,
+        createdAt: insertedId.getTimestamp(),
+      };
+    });
+
+    loggerService.debug(
+      `Successfully added ${insertedPlaylists.length} playlists to DB`
+    );
+    return insertedPlaylists;
+  } catch (err) {
+    loggerService.error(`Failed to add ${playlists?.length} playlists`, err);
     throw err;
   }
 }
