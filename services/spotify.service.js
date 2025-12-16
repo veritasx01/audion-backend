@@ -121,7 +121,7 @@ async function spotifyFetch(endpoint, params) {
       const retryAfter = error.response?.headers?.['retry-after'];
       if (retryAfter) {
         const waitTime = parseInt(retryAfter) * 1000; // Convert seconds to milliseconds
-        loggerService.debug(
+        loggerService.warn(
           `Spotify rate limit hit, waiting ${retryAfter} seconds before retry...`
         );
 
