@@ -6,13 +6,16 @@ export async function getPlaylists(req, res) {
   try {
     const filterBy = {
       playlistIds: req.query.playlistIds?.split(','),
-      searchString: req.query.q,
+      searchString: req.query.q?.trim() || '',
       genre: req.query.genre,
+      userId: req.query.userId,
+      includeLikedSongs: req.query.includeLikedSongs === 'true' ? true : false,
     };
-    const sortBy = req.query.sortBy || '';
-    const sortDir = +req.query.sortDir || 1; // 1 for ascending, -1 for descending
+    const sortField = req.query.sortBy || '';
+    const sortDirection = +req.query.sortDir || 1; // 1 for ascending, -1 for descending
+    const sortCriteria = { sortField, sortDirection };
 
-    const playlists = await playlistService.query(filterBy, sortBy, sortDir);
+    const playlists = await playlistService.query(filterBy, sortCriteria);
     res.json(playlists);
   } catch (err) {
     loggerService.error(err);
@@ -29,6 +32,22 @@ export async function getPlaylist(req, res) {
     } else res.json(playlist);
   } catch (err) {
     loggerService.error(`Failed to get playlist ${playlistId}`, err);
+    res.status(400).send({ error: err });
+  }
+}
+
+export async function getPlaylistSongFullDetails(req, res) {
+  const { playlistId, songId } = req.params;
+  try {
+    const song = await playlistService.getSongFullDetails(playlistId, songId);
+    if (!song) {
+      res.status(404).send({ error: 'Resource not found' });
+    } else res.json(song);
+  } catch (err) {
+    loggerService.error(
+      `Failed to get full details for song ${songId} in playlist ${playlistId}`,
+      err
+    );
     res.status(400).send({ error: err });
   }
 }
