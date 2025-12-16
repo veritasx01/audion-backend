@@ -2,7 +2,7 @@ import { httpService } from './http.service.js';
 import { loggerService } from './logger.service.js';
 
 export const utilService = {
-  buildSortObject,
+  buildSortCriteria,
   removeEmptyObjectFields,
   replaceImageUrlsWithBase64,
 };
@@ -15,9 +15,9 @@ export function removeEmptyObjectFields(obj) {
   );
 }
 
-function buildSortObject(sortBy, sortDir) {
-  if (!sortBy) return { sort: {} };
-  return { sort: { [sortBy]: sortDir } };
+function buildSortCriteria({ sortField, sortDirection = 1 }) {
+  if (!sortField) return { sort: {} };
+  return { sort: { [sortField]: sortDirection } };
 }
 
 /* Download image from URL and convert to Base64 

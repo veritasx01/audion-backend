@@ -20,7 +20,7 @@ export const playlistService = {
 
 const PAGE_SIZE = 50;
 
-async function query(filterBy = {}, sortBy, sortDir) {
+async function query(filterBy = {}, sortBy = {}) {
   // If searchString is provided, search Spotify playlists
   if (filterBy.searchString && !filterBy.userId && !filterBy.playlistIds) {
     const playlists = await querySpotifyPlaylists(filterBy.searchString);
@@ -29,7 +29,7 @@ async function query(filterBy = {}, sortBy, sortDir) {
   }
 
   // Otherwise, query local database
-  return await queryDB(filterBy, sortBy, sortDir);
+  return await queryDB(filterBy, sortBy);
 }
 
 async function querySpotifyPlaylists(query, limit = 20) {
@@ -42,12 +42,12 @@ async function querySpotifyPlaylists(query, limit = 20) {
   }
 }
 
-async function queryDB(filterBy = {}, sortBy, sortDir) {
+async function queryDB(filterBy = {}, sortBy = {}) {
   try {
-    const criteria = _buildFilterCriteria(filterBy);
-    const sortObject = utilService.buildSortObject(sortBy, sortDir);
+    const filterCriteria = _buildFilterCriteria(filterBy);
+    const sortCriteria = utilService.buildSortCriteria(sortBy);
     const collection = await dbService.getCollection(dbCollections.PLAYLIST);
-    var playlistCursor = await collection.find(criteria, sortObject);
+    var playlistCursor = await collection.find(filterCriteria, sortCriteria);
 
     if (filterBy.pageIdx !== undefined) {
       playlistCursor.skip(filterBy.pageIdx * PAGE_SIZE).limit(PAGE_SIZE);
@@ -367,19 +367,21 @@ async function enrichSongWithYouTubeData(playlist, song) {
 
 function _buildFilterCriteria(filterBy) {
   const criteria = {};
+  if (!filterBy) return criteria;
 
   // filter for playlists created by a specific user
-  if (filterBy?.userId) {
-    criteria._createdBy = filterBy.userId;
+  if (filterBy.userId) {
+    criteria.createdBy._id = { $eq: filterBy.userId };
   }
 
   // filter for liked songs playlist
-  if (filterBy?.isLikedSongs !== undefined) {
-    criteria.isLikedSongs = filterBy.isLikedSongs;
+  if (!filterBy.includeLikedSongs) {
+    // Exclude playlists that are marked as liked songs playlists
+    criteria.isLikedSongs = { $ne: true };
   }
 
   if (
-    filterBy?.playlistIds &&
+    filterBy.playlistIds &&
     Array.isArray(filterBy.playlistIds) &&
     filterBy.playlistIds.length > 0
   ) {
@@ -391,7 +393,7 @@ function _buildFilterCriteria(filterBy) {
   }
 
   // Free text search across songs in playlists
-  if (filterBy?.searchString) {
+  if (filterBy.searchString) {
     const searchRegex = { $regex: filterBy.searchString, $options: 'i' };
     criteria.$or = [
       { title: searchRegex }, // Search in playlist title
@@ -403,7 +405,7 @@ function _buildFilterCriteria(filterBy) {
   }
 
   // Filter by genre - playlist must have at least one song with the genre
-  if (filterBy?.genre) {
+  if (filterBy.genre) {
     criteria['songs.genres'] = { $in: [filterBy.genre.toLowerCase()] };
   }
 

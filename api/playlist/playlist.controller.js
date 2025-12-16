@@ -8,11 +8,14 @@ export async function getPlaylists(req, res) {
       playlistIds: req.query.playlistIds?.split(','),
       searchString: req.query.q?.trim() || '',
       genre: req.query.genre,
+      userId: req.query.userId,
+      includeLikedSongs: req.query.includeLikedSongs === 'true' ? true : false,
     };
-    const sortBy = req.query.sortBy || '';
-    const sortDir = +req.query.sortDir || 1; // 1 for ascending, -1 for descending
+    const sortField = req.query.sortBy || '';
+    const sortDirection = +req.query.sortDir || 1; // 1 for ascending, -1 for descending
+    const sortCriteria = { sortField, sortDirection };
 
-    const playlists = await playlistService.query(filterBy, sortBy, sortDir);
+    const playlists = await playlistService.query(filterBy, sortCriteria);
     res.json(playlists);
   } catch (err) {
     loggerService.error(err);
