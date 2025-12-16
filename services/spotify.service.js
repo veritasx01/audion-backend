@@ -271,6 +271,5 @@ function _transformPlaylistSchema(playlist) {
       fullName: playlist.owner?.display_name || 'Unknown User',
       isSpotifyUser: true,
     },
-    hasOnlyMetadata: true, // indicates tracks need to be fetched separately from youtube service
   };
 }
