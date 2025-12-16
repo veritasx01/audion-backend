@@ -246,11 +246,14 @@ async function _getPlaylistTracks(playlistId, limit = 50) {
     const tracksData = await spotifyFetch(endpoint, queryParams);
     if (!tracksData?.items?.length) return [];
 
-    let tracks = tracksData.items.map(item => {
-      const song = _transformSongSchema(item.track);
-      song.addedAt = item.added_at ? new Date(item.added_at) : null;
-      return song;
-    });
+    let tracks = tracksData.items
+      .filter(item => item?.type === 'track') // assert item is valid track (and not an episode or a null object)
+      .map(item => {
+        // map to our song schema
+        const song = _transformSongSchema(item.track);
+        song.addedAt = item.added_at ? new Date(item.added_at) : null;
+        return song;
+      });
 
     return tracks;
   } catch (err) {
