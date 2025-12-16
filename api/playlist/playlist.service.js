@@ -119,9 +119,26 @@ async function remove(playlistId) {
 async function add(playlist) {
   try {
     const collection = await dbService.getCollection(dbCollections.PLAYLIST);
+
+    // Check if playlist with same spotify playlist ID already exists
+    if (playlist.spotifyPlaylistId) {
+      const existingPlaylist = await collection.findOne({
+        spotifyPlaylistId: playlist.spotifyPlaylistId,
+      });
+
+      // if it already exists just return it
+      if (existingPlaylist) {
+        return {
+          ...existingPlaylist,
+          createdAt: existingPlaylist._id.getTimestamp(),
+        };
+      }
+    }
+
+    // Insert new playlist if no duplicate found
     const result = await collection.insertOne(playlist);
 
-    // Return the playlist with the generated _id and createdAt
+    // Return the newly inserted playlist with the generated _id and createdAt
     const insertedPlaylist = {
       ...playlist,
       _id: result.insertedId,
@@ -137,27 +154,61 @@ async function add(playlist) {
 
 async function addMany(playlists) {
   try {
-    if (!Array.isArray(playlists) || playlists.length === 0) {
-      throw new Error('Playlists must be a non-empty array');
-    }
+    if (!playlists?.length > 0) return [];
 
     const collection = await dbService.getCollection(dbCollections.PLAYLIST);
-    const result = await collection.insertMany(playlists, { ordered: false });
 
-    // Return the playlists with their generated _ids and createdAt
-    const insertedPlaylists = playlists.map((playlist, index) => {
-      const insertedId = result.insertedIds[index];
-      return {
-        ...playlist,
-        _id: insertedId,
-        createdAt: insertedId.getTimestamp(),
-      };
+    // Extract Spotify playlist IDs to check for existing playlists
+    const spotifyPlaylistIds = playlists
+      .filter(p => p.spotifyPlaylistId)
+      .map(p => p.spotifyPlaylistId);
+
+    // Find existing playlists on DB with matching Spotify IDs
+    const existingPlaylists = await collection
+      .find({ spotifyPlaylistId: { $in: spotifyPlaylistIds } })
+      .toArray();
+
+    // Create a map for quick lookup of existing playlists
+    const existingPlaylistsMap = new Map(
+      existingPlaylists.map(p => [p.spotifyPlaylistId, p])
+    );
+
+    // Separate playlists into existing and new
+    const existingResults = [];
+    const playlistsToInsert = [];
+
+    playlists.forEach(p => {
+      const existingPlaylist = existingPlaylistsMap.get(p.spotifyPlaylistId);
+      if (existingPlaylist) {
+        // Add createdAt timestamp and return existing playlist
+        existingResults.push({
+          ...existingPlaylist,
+          createdAt: existingPlaylist._id.getTimestamp(),
+        });
+      } else playlistsToInsert.push(p); // playlist does not exist, add to insert list
     });
 
-    loggerService.debug(
-      `Successfully added ${insertedPlaylists.length} playlists to DB`
-    );
-    return insertedPlaylists;
+    // Insert only the new playlists
+    let insertedResults = [];
+    if (playlistsToInsert.length > 0) {
+      const insertResult = await collection.insertMany(playlistsToInsert, {
+        ordered: false,
+      });
+
+      insertedResults = playlistsToInsert.map((playlist, idx) => {
+        const insertedId = insertResult.insertedIds[idx];
+        return {
+          ...playlist,
+          _id: insertedId,
+          createdAt: insertedId.getTimestamp(),
+        };
+      });
+    }
+
+    // Combine the already existing playlists and newly inserted playlists
+    const allResults = [...existingResults, ...insertedResults];
+
+    return allResults;
   } catch (err) {
     loggerService.error(`Failed to add ${playlists?.length} playlists`, err);
     throw err;
