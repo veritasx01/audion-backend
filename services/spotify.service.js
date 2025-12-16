@@ -239,7 +239,7 @@ async function _getPlaylistsTracks(playlists) {
 async function _getPlaylistTracks(playlistId, limit = 50) {
   const endpoint = `playlists/${playlistId}/tracks`;
   const outputFields =
-    'items(added_at,track(id,name,duration_ms,images,artists(id,name),album(id,name,release_date,images)))';
+    'items(added_at,track(type,id,name,duration_ms,images,artists(id,name),album(id,name,release_date,images)))';
   const queryParams = { limit, fields: outputFields };
   try {
     // Fetch playlist tracks from Spotify API
@@ -247,7 +247,7 @@ async function _getPlaylistTracks(playlistId, limit = 50) {
     if (!tracksData?.items?.length) return [];
 
     let tracks = tracksData.items
-      .filter(item => item?.type === 'track') // assert item is valid track (and not an episode or a null object)
+      .filter(item => item?.track?.type === 'track') // assert item is valid track (and not an episode or a null object)
       .map(item => {
         // map to our song schema
         const song = _transformSongSchema(item.track);
