@@ -271,16 +271,13 @@ function _excludeIrrelevantTracks(tracks, queryString) {
 
   return tracks.filter(track => {
     // assert query matches either title, artist, or album
-    const trackMatchesQuery =
-      queryRegex.test(track.title) ||
-      queryRegex.test(track.artist) ||
-      queryRegex.test(track.albumName);
+    // const trackMatchesQuery = queryRegex.test(track.title) || queryRegex.test(track.artist) || queryRegex.test(track.albumName);
 
     // assert album & title name are relevant
     const isAlbumRelevant = !albumExclusionRegex.test(track.albumName);
     const isTitleRelevant = !titleExclusionRegex.test(track.title);
 
-    return trackMatchesQuery && isAlbumRelevant && isTitleRelevant;
+    return isAlbumRelevant && isTitleRelevant; // && trackMatchesQuery
   });
 }
 
