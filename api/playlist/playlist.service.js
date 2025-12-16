@@ -309,6 +309,7 @@ async function getSongFullDetails(playlistId, songId) {
 async function enrichSongWithYouTubeData(playlist, song) {
   const playlistId = playlist._id;
   const songId = song._id;
+  let errMsg = '';
   try {
     const collection = await dbService.getCollection(dbCollections.PLAYLIST);
     loggerService.debug(
@@ -319,7 +320,9 @@ async function enrichSongWithYouTubeData(playlist, song) {
     const enrichedSongs = await enrichSongsWithYouTubeData([song]);
     const enrichedSong = enrichedSongs[0];
     if (!enrichedSong) {
-      throw `YouTube enrichment returned no data for song ${songId} in playlist ${playlistId}`;
+      errMsg = 'YouTube enrichment returned no data for song';
+      loggerService.error(`${errMsg} '${songId}' in playlist '${playlistId}'`);
+      throw errMsg;
     }
     loggerService.debug(
       `Enriched song ${songId} in playlist ${playlistId} with YouTube data: ${JSON.stringify(
