@@ -116,6 +116,36 @@ async function spotifyFetch(endpoint, params) {
       }
     }
 
+    // If it's a 429 error (rate limit), wait and retry once
+    if (error.response?.status === 429) {
+      const retryAfter = error.response?.headers?.['retry-after'];
+      if (retryAfter) {
+        const waitTime = parseInt(retryAfter) * 1000; // Convert seconds to milliseconds
+        loggerService.debug(
+          `Spotify rate limit hit, waiting ${retryAfter} seconds before retry...`
+        );
+
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+
+        try {
+          let response = await httpService.get(url, params, authHeader);
+          loggerService.debug('Spotify rate limit retry successful');
+          return response;
+        } catch (retryError) {
+          loggerService.error('Spotify rate limit retry failed:', retryError);
+          throw new Error(
+            `Spotify rate limit retry failed: ${
+              retryError.message || retryError
+            }`
+          );
+        }
+      } else {
+        loggerService.warn(
+          'Spotify rate limit hit but no Retry-After header found'
+        );
+      }
+    }
+
     throw new Error(
       `Spotify API error: ${error.response?.status || 'Unknown'} - ${
         error.message
