@@ -190,9 +190,19 @@ export async function searchPlaylists(query, limit = 10) {
       .map(_transformPlaylistSchema)
       .filter(p => p !== null);
 
-    // Collect in parallel tracks for all playlists
+    // Collect in parallel tracks for all playlists & exclude empty ones
     playlists = await _getPlaylistsTracks(playlists);
     playlists = playlists.filter(p => p.songs.length > 0);
+
+    // collect in parallel user profile images for all playlists creators
+    const userImgMap = await _getUsersProfileImgs(
+      playlists.map(p => p.createdBy._id)
+    );
+
+    // map user profile images to playlists
+    playlists.forEach(p => {
+      p.createdBy.profileImg = userImgMap[p.createdBy._id];
+    });
 
     return playlists;
   } catch (err) {
@@ -302,4 +312,37 @@ function _transformPlaylistSchema(playlist) {
       isSpotifyUser: true,
     },
   };
+}
+
+async function _getUserProfileImg(userId) {
+  try {
+    const userProfileData = await spotifyFetch(`users/${userId}`);
+    return userProfileData.images?.[0]?.url || null;
+  } catch (err) {
+    loggerService.error(`Failed fetching image for user ${userId}`, err);
+    return null; // return null on error
+  }
+}
+
+async function _getUsersProfileImgs(userIds) {
+  const uniqueUserIds = [...new Set(userIds)];
+  const userImgMap = {};
+  try {
+    // fetch in parallel images for all users
+    const userImgPromises = uniqueUserIds.map(async userId => {
+      const imgUrl = await _getUserProfileImg(userId);
+      return { userId, imgUrl };
+    });
+    // await all results to return
+    const usersImgs = await Promise.all(userImgPromises);
+
+    // build a map of userId to imgUrl
+    usersImgs.forEach(({ userId, imgUrl }) => {
+      userImgMap[userId] = imgUrl;
+    });
+  } catch (err) {
+    loggerService.error(`Bulk request for user images failed`, err);
+  } finally {
+    return userImgMap;
+  }
 }
