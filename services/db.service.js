@@ -128,14 +128,9 @@ async function _populateDB() {
 
     // Populate default playlists
     const regularPlaylistCount = await playlistCollection.countDocuments({
-      isLikedSongs: false,
+      isLikedSongs: { $ne: true },
     });
-    if (regularPlaylistCount > 0) {
-      loggerService.info(
-        'Regular playlists already exist in the database. Skipping default playlist population.'
-      );
-      return;
-    }
+    if (regularPlaylistCount > 0) return;
     const defaultPlaylists = [];
 
     const data = await import('../data/playlists.json', {
