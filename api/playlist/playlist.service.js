@@ -371,7 +371,7 @@ function _buildFilterCriteria(filterBy) {
 
   // filter for playlists created by a specific user
   if (filterBy.userId) {
-    criteria.createdBy._id = { $eq: filterBy.userId };
+    criteria['createdBy._id'] = filterBy.userId;
   }
 
   // filter for liked songs playlist
