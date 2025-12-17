@@ -247,7 +247,7 @@ async function _getPlaylistTracks(playlistId, limit = 50) {
     if (!tracksData?.items?.length) return [];
 
     let tracks = tracksData.items
-      .filter(item => item?.track?.type === 'track') // assert item is valid track (and not an episode or a null object)
+      .filter(item => item?.track?.type === 'track' && item?.track.id !== null) // assert item is valid track (and not an episode or an empty track object)
       .map(item => {
         // map to our song schema
         const song = _transformSongSchema(item.track);
