@@ -1,8 +1,7 @@
 import { MongoClient, ObjectId } from 'mongodb';
-import { loggerService } from '../services/logger.service.js';
-
 import { config } from '../config/db/index.js';
-// console.log('config:', config)
+import { loggerService } from '../services/logger.service.js';
+import { playlistService } from '../api/playlist/playlist.service.js';
 
 export const dbService = { getCollection };
 export const dbCollections = {
@@ -45,20 +44,27 @@ async function _populateDB() {
     const userCollection = await getCollection(dbCollections.USER);
     const userCount = await userCollection.countDocuments();
     if (userCount === 0) {
+      loggerService.info('No users found on DB. Populating initial data...');
       const usersData = await import('../data/users.js');
-      await userCollection.insertMany(usersData.users);
-      loggerService.info('Database populated with initial users data.');
+      const insertResult = await userCollection.insertMany(usersData.users);
+      loggerService.info(
+        `Database populated successfully with ${insertResult.insertedCount} users.`
+      );
     }
 
     // populate songs
     const songCollection = await getCollection(dbCollections.SONG);
     const count = await songCollection.countDocuments();
     if (count === 0) {
+      loggerService.info('No songs found on DB. Populating initial data...');
       const songsData = await import('../data/songs.js');
-      await songCollection.insertMany(songsData.songs);
-      loggerService.info('Database populated with initial songs data.');
+      const insertResult = await songCollection.insertMany(songsData.songs);
+      loggerService.info(
+        `Database populated successfully with ${insertResult.insertedCount} songs.`
+      );
     }
 
+    // populate playlists
     const users = await userCollection.find().toArray();
     const songs = await songCollection.find().toArray();
 
@@ -69,6 +75,9 @@ async function _populateDB() {
       isLikedSongs: true,
     });
     if (likedPlaylistsCount === 0 && users.length > 0) {
+      loggerService.info(
+        'No "Liked Songs" playlists found. Creating an empty playlist for each user...'
+      );
       const likedPlaylists = [];
       const userUpdates = [];
 
@@ -112,85 +121,46 @@ async function _populateDB() {
           }
         );
       }
-
-      // Generate genre-based playlists
-      if (songs.length > 0 && users.length > 0) {
-        // Extract unique genres
-        const genres = new Set();
-        songs.forEach(song => {
-          if (song.genres && Array.isArray(song.genres)) {
-            song.genres.forEach(genre => genres.add(genre.toLowerCase()));
-          }
-        });
-
-        // Create playlists for each genre
-        const playlists = [];
-        for (const genre of genres) {
-          const genreSongs = songs.filter(
-            song =>
-              song.genres && song.genres.some(g => g.toLowerCase() === genre)
-          );
-          const randomUser = users[Math.floor(Math.random() * users.length)];
-
-          playlists.push({
-            title: `${
-              genre.charAt(0).toUpperCase() + genre.slice(1)
-            } Essentials`,
-            description: `A curated collection of the best ${genre} tracks`,
-            createdBy: {
-              _id: randomUser._id.toString(), // Convert to string
-              username: randomUser.username,
-              fullName: randomUser.fullName,
-              email: randomUser.email,
-              profileImg:
-                randomUser.profileImg ||
-                'https://randomuser.me/api/portraits/thumb/men/81.jpg',
-            },
-            songs: genreSongs.map(song => ({
-              _id: song._id.toString(), // Convert to string
-              title: song.title,
-              artist: song.artist,
-              duration: song.duration,
-              albumName: song.albumName,
-              thumbnail: song.thumbnail,
-              releasedAt: song.releasedAt,
-              genres: song.genres,
-              url: song.url,
-              addedAt: new Date(),
-            })),
-            thumbnail:
-              genreSongs[0]?.thumbnail ||
-              'https://img.youtube.com/vi/default/hqdefault.jpg',
-          });
-        }
-
-        if (playlists.length > 0) {
-          const insertResult = await playlistCollection.insertMany(playlists);
-          const insertedPlaylistIds = Object.values(insertResult.insertedIds);
-
-          // Update users' libraries with their assigned genre playlists
-          for (let i = 0; i < playlists.length; i++) {
-            const playlist = playlists[i];
-            const playlistId = insertedPlaylistIds[i].toString(); // Convert to string
-            const userId = ObjectId.createFromHexString(playlist.createdBy._id); // Convert back to ObjectId for query
-
-            // Add this playlist ID to the user's library.playlists array
-            await userCollection.updateOne(
-              { _id: userId },
-              { $addToSet: { 'library.playlists': playlistId } }
-            );
-          }
-
-          loggerService.info(
-            `Database populated with ${playlists.length} genre-based playlists and updated user libraries.`
-          );
-        }
-      }
-
       loggerService.info(
         `Created ${likedPlaylists.length} "Liked Songs" playlists and updated user libraries.`
       );
     }
+
+    // Populate default playlists
+    const regularPlaylistCount = await playlistCollection.countDocuments({
+      isLikedSongs: false,
+    });
+    if (regularPlaylistCount > 0) {
+      loggerService.info(
+        'Regular playlists already exist in the database. Skipping default playlist population.'
+      );
+      return;
+    }
+    const defaultPlaylists = [];
+
+    const data = await import('../data/playlists.json', {
+      with: { type: 'json' },
+    });
+    defaultPlaylists.push(...(data.default || []));
+    if (defaultPlaylists.length > 0) {
+      loggerService.info(
+        `Loading ${defaultPlaylists.length} playlists from default initial playlist data...`
+      );
+      try {
+        const insertedPlaylists = await playlistService.addMany(
+          defaultPlaylists
+        );
+        loggerService.info(
+          `Successfully inserted ${insertedPlaylists.length} playlists.`
+        );
+      } catch (err) {
+        loggerService.error('Error inserting default playlists:', err);
+      }
+    } else {
+      loggerService.info('No default playlists to insert');
+    }
+
+    loggerService.info('Database population completed successfully.');
   } catch (err) {
     loggerService.error('Failed to populate DB', err);
     throw err;
