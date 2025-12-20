@@ -244,16 +244,47 @@ async function update(playlist) {
 async function addSongToPlaylist(playlistId, song) {
   try {
     const collection = await dbService.getCollection(dbCollections.PLAYLIST);
+
+    // First, get the current playlist to check the number of songs
+    const currentPlaylist = await getById(playlistId);
+    if (!currentPlaylist) {
+      throw `Playlist ${playlistId} not found`;
+    }
+
+    const currentSongCount = currentPlaylist.songs
+      ? currentPlaylist.songs.length
+      : 0;
+
+    // Add the song to the playlist
     const updateResult = await collection.updateOne(
       { _id: ObjectId.createFromHexString(playlistId) },
       { $push: { songs: song } }
     );
+
     if (
       updateResult.acknowledged !== true ||
       updateResult.modifiedCount === 0
     ) {
       throw `Failed to add song ${song?._id} to playlist ${playlistId}`;
     }
+
+    // If this is the first song in the playlist, update playlist thumbnail with song thumbnail
+    if (
+      currentSongCount === 0 &&
+      song.thumbnail &&
+      currentPlaylist.isLikedSongs !== true
+    ) {
+      const imageUpdateResult = await collection.updateOne(
+        { _id: ObjectId.createFromHexString(playlistId) },
+        { $set: { thumbnail: song.thumbnail } }
+      );
+      if (!imageUpdateResult.acknowledged) {
+        loggerService.warn(
+          `Failed to update playlist ${playlistId} thumbnail with first song's thumbnail`
+        );
+      }
+    }
+
     return updateResult.acknowledged;
   } catch (err) {
     loggerService.error(
