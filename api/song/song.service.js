@@ -8,7 +8,7 @@ import { youtubeService } from '../../services/youtube.service.js';
 
 export const songService = { query, getById, songExists, remove, add, update };
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 10;
 
 async function query(filterBy = {}, limit) {
   const query = filterBy?.searchString || '';
