@@ -34,6 +34,7 @@ async function ajax(endpoint, method = 'GET', data = null, headers = {}) {
     const res = await axios(options);
     return res.data;
   } catch (err) {
+    delete data.key; // don't log sensitive info
     loggerService.error(
       `Error '${err}' during ${method} request to ${endpoint}: with data: `,
       data
