@@ -32,7 +32,7 @@ function _initializeApiKeys() {
 
 // Get current API key
 function _getCurrentApiKey() {
-  return youtubeApiKeys[currentKeyIndex] || youtubeApiKeys[0];
+  return youtubeApiKeys[currentKeyIndex];
 }
 
 // Rotate to next available API key when quota is exceeded
@@ -66,6 +66,7 @@ async function _makeYouTubeRequest(endpoint, params, maxRetries = numOfKeys) {
         _rotateApiKey();
         continue;
       }
+      loggerService.error('YouTube API request failed', error);
       throw error;
     }
   }
@@ -143,12 +144,6 @@ export async function enrichSongsWithYouTubeData(songs) {
       song.duration = null;
     }
   });
-
-  loggerService.info(
-    `YouTube search completed: ${
-      enrichedSongs.filter(s => s.youtubeVideoId).length
-    }/${songs.length} videos found: ${JSON.stringify(enrichedSongs)}`
-  );
 
   return enrichedSongs;
 }

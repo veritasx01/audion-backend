@@ -343,11 +343,6 @@ async function enrichSongWithYouTubeData(playlist, song) {
   let errMsg = '';
   try {
     const collection = await dbService.getCollection(dbCollections.PLAYLIST);
-    loggerService.debug(
-      `Enriching song ${songId} in playlist ${playlistId} with YouTube data. Current state: ${JSON.stringify(
-        song
-      )}`
-    );
     const enrichedSongs = await enrichSongsWithYouTubeData([song]);
     const enrichedSong = enrichedSongs[0];
     if (!enrichedSong) {
@@ -355,11 +350,6 @@ async function enrichSongWithYouTubeData(playlist, song) {
       loggerService.error(`${errMsg} '${songId}' in playlist '${playlistId}'`);
       throw errMsg;
     }
-    loggerService.debug(
-      `Enriched song ${songId} in playlist ${playlistId} with YouTube data: ${JSON.stringify(
-        enrichedSong
-      )}`
-    );
     // Update the song in the playlist
     const updateResult = await collection.updateOne(
       {
@@ -383,9 +373,7 @@ async function enrichSongWithYouTubeData(playlist, song) {
     ) {
       throw `Failed to update song ${songId} in playlist ${playlistId} with YouTube data`;
     }
-    loggerService.debug(
-      `Successfully updated song ${songId} in playlist ${playlistId} with YouTube data`
-    );
+
     return enrichedSong;
   } catch (err) {
     loggerService.error(

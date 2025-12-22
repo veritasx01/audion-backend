@@ -23,14 +23,6 @@ async function query(filterBy = {}, limit) {
       songs
     );
 
-    loggerService.debug(
-      `Enriched ${
-        enrichedSongs.length
-      } songs with YouTube data, for query: ${query}. limit: ${limit}. result: ${JSON.stringify(
-        enrichedSongs
-      )}`
-    );
-
     // return only songs with a matching youtube URL
     return enrichedSongs.filter(song => song.url !== null);
   } catch (err) {

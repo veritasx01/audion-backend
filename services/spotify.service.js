@@ -166,8 +166,8 @@ export async function searchTracks(query, limit = 5) {
 
     // exclude irrelevant tracks based on title/album heuristics
     const relevantSongs = _excludeIrrelevantTracks(songs, query);
-    loggerService.debug(`Excluded the following tracks for query "${query}":`);
-    loggerService.debug(songs.filter(song => !relevantSongs.includes(song)));
+    // loggerService.debug(`Excluded the following tracks for query "${query}":`);
+    // loggerService.debug(songs.filter(song => !relevantSongs.includes(song)));
 
     // return top relevant tracks up to limit
     return relevantSongs?.slice(0, limit);
